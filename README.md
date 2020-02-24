@@ -12,3 +12,4 @@ Data analysis of the 2019 Stack Overflow Developer survey results in three diffe
 * Jupyter Notebook (Python): complete analysis from scratch with NumPy, pandas and Plotly
 
 The source dataset can downloaded [here](https://drive.google.com/file/d/1QOmVDpd8hcVYqqUXDXf68UMDWQZP0wQV/view) (the file is too large to include in the repository).
+In the case of the analysis in Jupyter Notebook, you can read an HTML version with all the code and resulting visualizations [here](https://so2019devsurvey.ze1598.repl.co/).
