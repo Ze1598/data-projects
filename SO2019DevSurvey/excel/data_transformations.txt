@@ -1,0 +1,139 @@
+MainBranch
+
+I am a student who is learning to code
+I am not primarily a developer, but I write code sometimes as part of my work
+I code primarily as a hobby
+I am a developer by profession
+I used to be a developer by profession, but no longer am
+
+Student
+Code as part of job
+Hobbyist
+Developer as profession
+Used to work as a developer
+
+----------------------------------------------------------------------
+Employment
+
+Not employed, and not looking for work
+Not employed, but looking for work
+Employed full-time
+Employed part-time
+Independent contractor, freelancer, or self-employed
+Retired
+
+Not looking for work
+Looking for work
+Full-Time
+Part-Time
+Independent Contractor/Freelancer/Self-Employed
+Retired
+
+----------------------------------------------------------------------
+UndergradMajor
+
+Computer science, computer engineering, or software engineering
+Web development or web design
+Information systems, information technology, or system administration
+Mathematics or statistics
+Another engineering discipline
+A business discipline
+A health science
+A humanities discipline
+A natural science
+A social science
+Fine arts or performing arts
+I never declared a major
+Other
+
+CompSci/CompEgn/SoftEng
+Web development/design
+InfSys/InfTech/SysAdmin
+Mathematics/Statistics
+Another Engineering Degree
+Business
+Health Science
+Humanities
+Social Science
+Fine Arts/Performing Arts
+None
+Other
+
+
+----------------------------------------------------------------------
+EdLevel
+
+I never completed any formal education
+Primary/elementary school
+Secondary school
+Some college/university study without earning a degree
+Associate degree
+Bachelor’s degree
+Master’s degree
+Professional degree 
+Other doctoral degree
+Something else
+
+No formal education
+Primary School
+Secondary School
+College/University study w/o degree
+Associate Degree
+Bachelor’s degree
+Master’s degree
+Professional degree
+Doctoral Degree
+Other
+
+**********************************************************************
+----------------------------------------------------------------------
+ResumeUpdate
+
+Re­entry into the workforce
+My job status changed
+I had a negative experience or interaction at work
+I heard about a job opportunity
+Something else changed
+I was preparing for a job search
+
+Re-entry into workforce
+Job status change
+Negative experience at work
+Job opportunity
+New achievement
+Job search
+
+----------------------------------------------------------------------
+JobFactors
+
+UNPIVOT
+
+
+----------------------------------------------------------------------
+ConvertedComp
+
+0-10,000
+10,000-20,000
+[...]
+60,000 - 70,000
+70,000+
+N/A (1,000,000+)
+
+----------------------------------------------------------------------
+WorkRemote
+
+It's complicated
+All or almost all the time
+More than half, but not all, the time
+About half the time
+Less than half the time, but at least one day each week
+A few days each month
+Less than once per month / Never
+
+It's complicated
+Full-time remote
+Regularly
+Half the time
+At least day per week
+Rarely
+Never
