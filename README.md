@@ -13,4 +13,8 @@ Data analysis of the 2019 Stack Overflow Developer survey results in three diffe
 
 The source dataset can downloaded [here](https://drive.google.com/file/d/1QOmVDpd8hcVYqqUXDXf68UMDWQZP0wQV/view) (the file is too large to include in the repository).
 
-In the case of the analysis in Jupyter Notebook, you can read an HTML version with all the code and resulting visualizations [here](https://so2019devsurvey.ze1598.repl.co/).
+You can view the Excel version of the analysis [here](https://ipppt-my.sharepoint.com/:x:/g/personal/2161161_iscap_ipp_pt/EZyjLWRSLGlLrl4mob110y4BwXPpXtswPM8WR3chfE-LWA?e=25Y4ia).
+
+You can find the Power BI version only as a PDF in the repository, in [this folder](https://github.com/Ze1598/data-projects/tree/master/SO2019DevSurvey/results) or as a downloadable .pbix file in [this folder](https://github.com/Ze1598/data-projects/tree/master/SO2019DevSurvey/power%20bi).
+
+You can view the Python version of the analysis in an HTML version of the resulting Jupyter Notebook [here](https://so2019devsurvey.ze1598.repl.co/).
