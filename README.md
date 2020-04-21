@@ -1,6 +1,6 @@
 # Data Projects
 
-A repository for all my data-related projects (mainly data analysis)
+A repository for all my data-related projects.
 
 
 ## Description of projects
