@@ -18,3 +18,9 @@ You can view the Excel version of the analysis [here](https://ipppt-my.sharepoin
 You can find the results of Power BI version of the analysis as a PDF in [this folder](https://github.com/Ze1598/data-projects/tree/master/SO2019DevSurvey/results) of the repository or as a downloadable .pbix file in [this folder](https://github.com/Ze1598/data-projects/tree/master/SO2019DevSurvey/power%20bi).
 
 You can view the Python version of the analysis in an HTML version of the resulting Jupyter Notebook [here](https://so2019devsurvey.ze1598.repl.co/).
+
+
+### Spotify API
+Proofs of concept about extracting data from the Spotify API using the [Spotipy](https://spotipy.readthedocs.io/en/2.11.2/) wrapper.
+
+* [playlist_artists](https://github.com/Ze1598/data-projects/tree/master/spotify/playlists_artists): Extract information about the artists featured in a playlist and plot their frequencies in a column chart
