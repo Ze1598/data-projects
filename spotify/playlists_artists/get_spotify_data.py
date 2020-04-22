@@ -91,7 +91,7 @@ def get_artist_counts(artists_info: List[List[Dict]]) -> Dict[str, int]:
     return artist_counts
 
 
-def saveArtistsCsv(artists_counts: Dict[str, int]) -> None:
+def save_artists_csv(artists_counts: Dict[str, int]) -> None:
     """
     Given a dictionary with the frequencies of each artist, create a
     DataFrame for that information and save it as a CSV file.
@@ -130,4 +130,4 @@ if __name__ == "__main__":
     artists_counts = get_artist_counts(artists_info)
 
     # Save the artist frequencies in a CSV
-    saveArtistsCsv(artists_counts)
+    save_artists_csv(artists_counts)
