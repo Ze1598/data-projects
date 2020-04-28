@@ -20,6 +20,11 @@ You can find the results of Power BI version of the analysis as a PDF in [this f
 You can view the Python version of the analysis in an HTML version of the resulting Jupyter Notebook [here](https://so2019devsurvey.ze1598.repl.co/).
 
 
+### Demos
+Smaller demos created for specific purposes, such as how to perform a certain operation in Python.
+* [Unpivot delimited data [pandas]](https://github.com/Ze1598/data-projects/tree/master/demos/unpivot%20delimited%20data%20%5Bpandas%5D): given a DataFrame that has one column with delimited data, how can those individual values be extracted without losing any data?
+
+
 ### Spotify API
 Proofs of concept about extracting data from the Spotify API using the [Spotipy](https://spotipy.readthedocs.io/en/2.11.2/) wrapper.
 
