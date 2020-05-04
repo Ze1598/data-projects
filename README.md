@@ -24,6 +24,8 @@ You can view the Python version of the analysis in an HTML version of the result
 Smaller demos created for specific purposes, such as how to perform a certain operation in Python.
 * [Unpivot delimited data [pandas]](https://github.com/Ze1598/data-projects/tree/master/demos/unpivot%20delimited%20data%20%5Bpandas%5D): given a DataFrame that has one column with delimited data, how can those individual values be extracted without losing any data?
 
+* [Group data with bins or categories [pandas]](https://github.com/Ze1598/data-projects/tree/master/demos/group%20data%20with%20bins%20or%20categories%20%5Bpandas%5D): bin discrete or continuous data and categorize categorical data using pandas
+
 
 ### Spotify API
 Proofs of concept about extracting data from the Spotify API using the [Spotipy](https://spotipy.readthedocs.io/en/2.11.2/) wrapper.
