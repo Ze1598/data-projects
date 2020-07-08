@@ -1,0 +1,5 @@
+Kaggle:
+https://www.kaggle.com/alancmathew/anime-dataset
+
+r/datasets post:
+https://www.reddit.com/r/datasets/comments/hav8oq/selfpromotion_anime_dataset/

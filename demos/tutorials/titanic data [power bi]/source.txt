@@ -1,0 +1,7 @@
+Two-part tutorial:
+
+"Cleaning Data With Power BI"
+https://www.youtube.com/watch?v=hs6WIe71r3k
+
+"Visualising the Cleaned Titanic Data"
+https://www.youtube.com/watch?v=L1Z7cxDsjjQ
