@@ -23,16 +23,22 @@ You can view the Python version of the analysis in an HTML version of the result
 The R notebook is available [here](https://github.com/Ze1598/data-projects/blob/master/SO2019DevSurvey/results/R_data_analysis.html) too.
 
 
+### Anime analysis
+Data analysis of a dataset about anime found on Kaggle. This dataset contains anime listings, the studios responsible for the animation, genres, warnings, etc. This project was divided in two parts:
+* [Microsoft Power BI data analysis](https://github.com/Ze1598/data-projects/tree/master/anime%20analysis/anime%20analysis%20%5Bpower%20bi%5D): a straightforward data analysis in Microsoft Power BI
+* [anime_db](https://github.com/Ze1598/data-projects/tree/master/anime%20analysis/anime_db%20%5Bpostgresql_python%5D): creation of a PostgreSql database and data analysis in Python, using the tables created in the Power BI analysis (exported from Power BI as CSV files). The [psycopg2](https://pypi.org/project/psycopg2/) library was used to perform database operations, and [pandas](https://pandas.pydata.org/), [NumPy](https://numpy.org/) and [Plotly](https://plotly.com/python/) were used for the data analysis.
+
+The original dataset is available on Kaggle [here](https://www.kaggle.com/alancmathew/anime-dataset).
+
+The results of the Power BI analysis are available [here](https://github.com/Ze1598/data-projects/blob/master/anime%20analysis/anime%20analysis%20%5Bpower%20bi%5D/anime_analysis.pdf) (a PDF of the report).
+
+The results of the anime_db work is available [here](https://github.com/Ze1598/data-projects/tree/master/anime%20analysis/anime_db%20%5Bpostgresql_python%5D/results) (two Jupyter Notebooks and the database ERD).
+
+
 ### Demos
-Smaller demos created for specific purposes, such as how to perform a certain operation in Python, data analyses in Power BI, ..., including the resulting files of tutorials I've completed. The link to the original datasets can always be found in the respective "source.txt" file.
+Smaller demos created for specific purposes, such as how to perform a certain operation in Python, data analyses in Power BI, etc., including the resulting files of tutorials I've completed. The link to the original datasets can always be found in the respective "source.txt" file.
 Some examples of the demos available so far:
 
 * [Creation of an anime dataset by scraping LiveChart.me with Power BI](https://github.com/Ze1598/data-projects/tree/master/demos/livechart%20data%20scrape%20%5Bpower%20bi%5D)
 * [Data Analysis of an Olympics dataset from Kaggle](https://github.com/Ze1598/data-projects/tree/master/demos/olympics%20%5Bpower%20bi%5D)
 * [How to unpivot delimited data with Python and pandas](https://github.com/Ze1598/data-projects/tree/master/demos/unpivot%20delimited%20data%20%5Bpandas%5D)
-
-
-### Spotify API
-Proofs of concept about extracting data from the Spotify API using the [Spotipy](https://spotipy.readthedocs.io/en/2.11.2/) wrapper.
-
-* [playlist_artists](https://github.com/Ze1598/data-projects/tree/master/spotify/playlists_artists): Extract information about the artists featured in a playlist and plot their frequencies in a column chart
