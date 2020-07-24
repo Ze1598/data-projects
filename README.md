@@ -2,10 +2,7 @@
 
 A repository for all my data-related projects.
 
-
-## Description of projects
-
-### 2019 Stack Overflow Developer Survey
+## 2019 Stack Overflow Developer Survey
 Data analysis of the 2019 Stack Overflow Developer survey results in four different softwares:
 * Microsoft Excel: data transformation and creation of two dashboards
 * Microsoft Power BI: usage of the data transformed in Excel to recreate the same dashboards
@@ -23,7 +20,7 @@ You can view the Python version of the analysis in an HTML version of the result
 The R notebook is available [here](https://github.com/Ze1598/data-projects/blob/master/SO2019DevSurvey/results/R_data_analysis.html) too.
 
 
-### Anime analysis
+## Anime analysis
 Data analysis of a dataset about anime found on Kaggle. This dataset contains anime listings, the studios responsible for the animation, genres, warnings, etc. This project was divided in two parts:
 * [Microsoft Power BI data analysis](https://github.com/Ze1598/data-projects/tree/master/anime%20analysis/anime%20analysis%20%5Bpower%20bi%5D): a straightforward data analysis in Microsoft Power BI
 * [anime_db](https://github.com/Ze1598/data-projects/tree/master/anime%20analysis/anime_db%20%5Bpostgresql_python%5D): creation of a PostgreSql database and data analysis in Python, using the tables created in the Power BI analysis (exported from Power BI as CSV files). The [psycopg2](https://pypi.org/project/psycopg2/) library was used to perform database operations, and [pandas](https://pandas.pydata.org/), [NumPy](https://numpy.org/) and [Plotly](https://plotly.com/python/) were used for the data analysis.
@@ -35,7 +32,7 @@ The results of the Power BI analysis are available [here](https://github.com/Ze1
 The results of the anime_db work is available [here](https://github.com/Ze1598/data-projects/tree/master/anime%20analysis/anime_db%20%5Bpostgresql_python%5D/results) (two Jupyter Notebooks and the database ERD).
 
 
-### 2020 Stack Overflow Developer Survey
+## 2020 Stack Overflow Developer Survey
 Similar to the 2019 counterpart, but using the 2020 data. It is similar to last year's analysis but, in my opinion, it is better given the new knowledge and skills I've acquired since the first analysis.
 
 So far, the data analysis of the 2020 Stack Overflow Developer survey was made in:
@@ -46,8 +43,8 @@ The source dataset can be downloaded [here](https://drive.google.com/file/d/1dfG
 You can find the results of the Power BI report as a PDF [here](https://github.com/Ze1598/data-projects/blob/master/SO2020DevSurvey/power%20bi/report.pdf) and as a downloadable .pbix file [here](https://github.com/Ze1598/data-projects/blob/master/SO2020DevSurvey/power%20bi/data_analysis.pbix).
 
 
-### Demos
-Smaller demos created for specific purposes, such as how to perform a certain operation in Python, data analyses in Power BI, etc., including the resulting files of tutorials I've completed. The link to the original datasets can always be found in the respective "source.txt" file.
+## Demos
+Smaller demos created for specific purposes, such as how to perform a certain data transformation in Python, data analyses in Power BI, etc., including the resulting files of tutorials I've completed. The link to the original datasets can always be found in the respective "source.txt" file.
 Some examples of the demos available so far:
 
 * [Creation of an anime dataset by scraping LiveChart.me with Power BI](https://github.com/Ze1598/data-projects/tree/master/demos/livechart%20data%20scrape%20%5Bpower%20bi%5D)
