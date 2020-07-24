@@ -1,0 +1,107 @@
+NEWStuck
+Visit another developer community (please name): -> Visit another developer community
+
+-------------------------------------------------------------
+JobFactors
+
+Languages, frameworks, and other technologies I'd be working with -> Technical compatibility
+Opportunities for professional development -> Professional Development
+Flex time or a flexible schedule -> Flexible schedule
+Office environment or company culture -> Company culture
+Diversity of the company or organization -> Diversity of the company
+How widely used or impactful my work output would be -> Impact of my work
+Financial performance or funding status of the company or organization -> Financial performance of the company
+Specific department or team I'd be working on -> Team/Department fit
+
+
+-------------------------------------------------------------
+DevType
+
+Developer, desktop or enterprise applications -> Desktop applications developer
+Developer, full-stack -> Full-stack developer
+Developer, mobile -> Mobile developer
+Developer, front-end -> Front-end developer
+Developer, back-end -> Back-end developer
+Developer, QA or test -> QA developer
+Developer, game or graphics -> Game developer
+Developer, embedded applications or devices -> Embedded applications developer
+Engineer, data -> Data engineer
+Data scientist or machine learning specialist -> Data Scientist/ML specialist
+Engineer, site reliability -> Site reliability engineer
+
+
+-------------------------------------------------------------
+NEWCollabToolsWorkedWith
+
+Google Suite (Docs, Meet, etc) -> Google Suite
+
+-------------------------------------------------------------
+MainBranch
+
+I am a developer by profession -> Professional developer
+I code primarily as a hobby -> Hobbyist developer
+I used to be a developer by profession, but no longer am -> Worked as a professional developer before
+I am not primarily a developer, but I write code sometimes as part of my work -> Developer as part of job
+I am a student who is learning to code -> Student learning to code
+
+-------------------------------------------------------------
+EdLevel
+
+Master's degree (M.A., M.S., M.Eng., MBA, etc.) -> Master's degree
+Bachelor's degree (B.A., B.S., B.Eng., etc.) -> Bachelor's degree
+Secondary school (e.g. American high school, German Realschule or Gymnasium, etc.) -> High School
+Professional degree (JD, MD, etc.) -> Professional degree
+Associate degree (A.A., A.S., etc.) -> Associate degree
+Some college/university study without earning a degree -> Higher Ed. study w/o degree
+Other doctoral degree (Ph.D., Ed.D., etc.) -> Doctoral degree
+Primary/elementary school -> Elementary school
+I never completed any formal education -> No formal education
+
+
+-------------------------------------------------------------
+Employment
+
+Independent contractor, freelancer, or self-employed -> Freelancer/Self-employed
+
+
+-------------------------------------------------------------
+Gender
+
+If gender.startswith("Man") then "Man"
+Else If gender.startswith("Woman") then "Woman"
+Else if gender == "null" then null
+Else "Other"
+
+
+-------------------------------------------------------------
+NEWOvertime
+
+Often: 1-2 days per week or more -> Often
+Occasionally: 1-2 days per quarter but less than monthly -> Occasionally
+Sometimes: 1-2 days per month but less than weekly -> Sometimes
+Rarely: 1-2 days per year or less -> Rarely
+
+-------------------------------------------------------------
+UndergradMajor
+
+Computer science, computer engineering, or software engineering -> CompSci/Eng or SoftEng
+Another engineering discipline (such as civil, electrical, mechanical, etc.) -> Another Engineering discipline
+A humanities discipline (such as literature, history, philosophy, etc.) -> Humanities
+A health science (such as nursing, pharmacy, radiology, etc.) -> Health Science
+Information systems, information technology, or system administration -> IS/IT or SysAdmin
+A natural science (such as biology, chemistry, physics, etc.) -> Natural Science
+Fine arts or performing arts (such as graphic design, music, studio art, etc.) -> Fine Arts/Performing Arts
+A social science (such as anthropology, psychology, political science, etc.) -> Social Science
+A business discipline (such as accounting, finance, marketing, etc.) -> Business discipline
+I never declared a major -> No major
+
+-------------------------------------------------------------
+Country
+
+United States -> United States of America
+Russian Federation -> Russia
+
+-------------------------------------------------------------
+LanguageWorkedWith
+
+Bash/Shell/PowerShell -> Shell
