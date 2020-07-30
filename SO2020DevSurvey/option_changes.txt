@@ -5,7 +5,7 @@ Visit another developer community (please name): -> Visit another developer comm
 JobFactors
 
 Languages, frameworks, and other technologies I'd be working with -> Technical compatibility
-Opportunities for professional development -> Professional Development
+Opportunities for professional development -> Professional development
 Flex time or a flexible schedule -> Flexible schedule
 Office environment or company culture -> Company culture
 Diversity of the company or organization -> Diversity of the company
@@ -40,7 +40,7 @@ MainBranch
 
 I am a developer by profession -> Professional developer
 I code primarily as a hobby -> Hobbyist developer
-I used to be a developer by profession, but no longer am -> Worked as a professional developer before
+I used to be a developer by profession, but no longer am -> Worked as a developer before
 I am not primarily a developer, but I write code sometimes as part of my work -> Developer as part of job
 I am a student who is learning to code -> Student learning to code
 
