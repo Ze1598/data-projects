@@ -38,12 +38,16 @@ Similar to the 2019 counterpart, but using the 2020 data. It is similar to last 
 So far, the data analysis of the 2020 Stack Overflow Developer survey was made in:
 * Microsoft Power BI: data transformations in Power Query and creation of four dashboards (general data, technology-related, professional status, and other data)
 * Microsoft Excel: similar analysis to Power BI, but has only two dashboards, including mostly the same information, but visually rearranged
+* Python/PostgreSQL: a two-phase project. The first is data engineering oriented, where I pre-processed the dataset, created a PostgreSQL database using the psycopg2 driver and then inserted the data. The second phase is the proper data analysis, using Plotly for the visualization, similar to what I did in Excel and Power BI
 
 The source dataset can be downloaded [here](https://drive.google.com/file/d/1dfGerWeWkcyQ9GX9x20rdSGj7WtEpzBB/view) (the file is too large to include in the repository).
 
 You can find the results of the Power BI report as a PDF [here](https://github.com/Ze1598/data-projects/blob/master/SO2020DevSurvey/power%20bi/report.pdf) and as a downloadable .pbix file [here](https://github.com/Ze1598/data-projects/blob/master/SO2020DevSurvey/power%20bi/data_analysis.pbix).
 
 You can find the Excel file version of the data analysis, as well as screenshots of the resulting dashboards, [here](https://github.com/Ze1598/data-projects/tree/master/SO2020DevSurvey/excel).
+
+For the Python (and PostgreSQL) part, I divided the work in two Jupyter Notebooks. The first notebook covers the data engineering part, and the second covers the data analysis part. You can read the first notebook [here](https://so2020devsurvey-part1--ze1598.repl.co/
+) and the second notebook [here](https://so2020devsurvey-part2--ze1598.repl.co/). Both notebooks are also available in this [repository](https://github.com/Ze1598/data-projects/tree/master/SO2020DevSurvey/python).
 
 
 ## Demos
