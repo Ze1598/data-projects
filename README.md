@@ -29,7 +29,7 @@ The original dataset is available on Kaggle [here](https://www.kaggle.com/alancm
 
 The results of the Power BI analysis are available [here](https://github.com/Ze1598/data-projects/blob/master/anime%20analysis/anime%20analysis%20%5Bpower%20bi%5D/anime_analysis.pdf) (a PDF of the report).
 
-The results of the anime_db work is available [here](https://github.com/Ze1598/data-projects/tree/master/anime%20analysis/anime_db%20%5Bpostgresql_python%5D/results) (two Jupyter Notebooks and the database ERD).
+The results of the anime_db work is available [here](https://github.com/Ze1598/data-projects/tree/master/anime%20analysis/anime_db%20%5Bpostgresql_python%5D/results) (two Jupyter Notebooks and the database ERD). You can read the first notebook [here](https://animedb-part-1--ze1598.repl.co/) and the second [here](https://animedb-part-2--ze1598.repl.co/). The first is all about the data engineering part, that is, writing data to the database. The second notebook is the actual data analysis.
 
 
 ## 2020 Stack Overflow Developer Survey
