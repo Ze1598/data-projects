@@ -7,9 +7,9 @@ The data was exported from Microsoft Power BI into five CSV files, with no furth
 
 The database and the columns were created through the command line, with psql. The SQL code for this is avaible in the "database_tables_creation.sql" file.
 
-The insertion of data was performed in Python, using the psycopg2 library. This allowed me to load the CSVs as pandas DataFrames and then insert them into the database using pure SQL queries, not ORM functions. The Python data insertion script is available in the "anime_db_inserts.ipynb" Jupyter Notebook.
+The insertion of data was performed in Python, using the psycopg2 library. This allowed me to load the CSVs as pandas DataFrames and then insert them into the database using pure SQL queries, not ORM functions. The Python data insertion script is available in the "anime_db_inserts.ipynb" Jupyter Notebook. You can read it [here](https://animedb-part-1--ze1598.repl.co/).
 
-After the insertions, I queried the database to perform data analysis and data visualization. The charts were created were the same I had created in the Power BI report. The plotting library chosen was Plotly for its interactivity and flexible API. This part is available in the "anime_db_analysis.ipynb" Jupyter Notebook.
+After the insertions, I queried the database to perform data analysis and data visualization. The charts created were the same I had created in the Power BI report. The plotting library chosen was Plotly for its interactivity and flexible API. This second part is available in the "anime_db_analysis.ipynb" Jupyter Notebook. You can read it [here](https://animedb-part-2--ze1598.repl.co/).
 
 The "database.ini" file contains information about the database to connect to it in Python.
 
