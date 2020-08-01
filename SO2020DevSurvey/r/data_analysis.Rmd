@@ -1,0 +1,724 @@
+---
+title: "2020 Stack Overflow Developer Survey Results"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: yes
+---
+
+The Stack Overflow Developer Survey 2020 was applied from February 5th to the 28th. 
+There were a total of 64461 respondents for a total of 61 questions. However, less than 30 questions are considered for this analysis.
+
+The main objective of this analysis is to explore who are the respondents, such as how they use code professionally, their country, academic background, technologies they work with, etc.
+
+The original dataset can be downloaded from Stack Overflow's website [here](https://insights.stackoverflow.com/survey).
+
+# Imports
+```{r}
+require(RPostgreSQL)
+require(ini)
+library(plotly)
+```
+
+# Data Analysis
+
+## Connect to Database
+
+
+```{r}
+# Load host, database, user and password information stored in the "postgresql" group
+db_info <- read.ini("db.ini")$postgresql
+```
+
+
+```{r}
+db_driver <- dbDriver("PostgreSQL")
+db_connection <- dbConnect(
+    db_driver, 
+    dbname = db_info$database, 
+    host = db_info$host, 
+    user = db_info$user, 
+    password = db_info$password
+)
+```
+
+## General Data
+
+### Gender of Respondents
+
+
+```{r}
+query_str <- "
+    SELECT gender, COUNT(gender) AS gender_count
+    FROM respondents
+    WHERE gender IS NOT NULL
+    GROUP BY gender;
+"
+df <- dbGetQuery(db_connection, query_str)
+
+fig <- plot_ly() %>% 
+    add_pie(
+        data = df, 
+        labels = df$gender, 
+        values = df$gender_count
+    ) %>% 
+    layout(title = "Gender of Respondents")
+fig
+```
+
+### Age of Respondents
+
+
+```{r}
+query_str <- "
+    SELECT age, COUNT(age) AS age_count
+    FROM respondents
+    WHERE age BETWEEN 10 AND 80
+    GROUP BY age;
+"
+df <- dbGetQuery(db_connection, query_str)
+
+# Relative frequencies for the key takeaways (single-choice question)
+age_20_30 <- sum(df[df$age >= 20 & df$age <=30,"age_count"] / sum(df$age_count))
+
+fig <- plot_ly() %>% 
+    add_bars(
+        data = df, 
+        x = df$age, 
+        y = df$age_count
+    ) %>% 
+    layout(title = "Age of Respondents")
+fig
+```
+
+### Country of Respondents
+
+
+```{r}
+query_str <- "
+    SELECT country, COUNT(country) AS country_count
+    FROM respondents
+    GROUP BY country
+    ORDER BY country_count DESC
+    LIMIT 15;
+"
+df <- dbGetQuery(db_connection, query_str)
+df <- df[order(df$country_count),]
+
+fig <- plot_ly() %>%
+    add_bars(
+        data = df,
+        x = df$country_count,
+        y = df$country
+    ) %>%
+    layout(
+        title = "Country of Respondents",
+        yaxis = list(
+            categoryorder = "array",
+            categoryarray = df$country_count
+        )
+    )
+fig
+```
+
+### Education Level of Respondents
+
+
+```{r}
+query_str <- "
+    SELECT ed_level, COUNT(ed_level) AS ed_level_count
+    FROM respondents
+    WHERE ed_level IS NOT NULL
+    GROUP BY ed_level
+    ORDER BY ed_level_count DESC;
+"
+df <- dbGetQuery(db_connection, query_str)
+df <- df[order(df$ed_level_count),]
+
+# Relative frequencies for the key takeaways (single-choice question)
+ed_level_bachelor <- df[df$ed_level == "Bachelor's degree","ed_level_count"] / sum(df$ed_level_count)
+ed_level_masters <- df[df$ed_level == "Master's degree","ed_level_count"] / sum(df$ed_level_count)
+
+fig <- plot_ly() %>%
+    add_bars(
+        data = df,
+        x = df$ed_level_count,
+        y = df$ed_level
+    ) %>%
+    layout(
+        title = "Education Level of Respondents",
+        yaxis = list(
+            categoryorder = "array",
+            categoryarray = df$ed_level_count
+        )
+    )
+fig
+```
+
+### Hobbyist Developers
+
+
+```{r}
+query_str <- "
+    SELECT hobbyist, COUNT(hobbyist) AS hobbyist_count
+    FROM respondents
+    WHERE hobbyist IS NOT NULL
+    GROUP BY hobbyist;
+"
+df <- dbGetQuery(db_connection, query_str)
+
+fig <- plot_ly() %>% 
+    add_pie(
+        data = df, 
+        labels = df$hobbyist, 
+        values = df$hobbyist_count
+    ) %>% 
+    layout(title = "Do you code as a hobby?")
+fig
+```
+
+### Key Takeaways
+
+* 9 out of every 10 respondents identify themselves as men
+* Approximately 52.14% of the respondents are between the ages of 20 and 30
+* Twelve thousand respondents are from the United States of America, followed by India with eight thousand and the United Kingdom with almost four thousand respondents
+* Bachelor and Master's Degrees are the most common education levels, representing 46.22% and 22.83% of the answers, respectively
+* Almost 80% of the respondents reported coding as a hobby
+
+## Technology-related Data
+
+### Programming Languages
+
+
+```{r}
+query_str <- "
+    SELECT prog_language, COUNT(prog_language) AS prog_language_count
+    FROM prog_languages
+    GROUP BY prog_language
+    ORDER BY prog_language_count DESC
+    LIMIT 10;
+"
+df <- dbGetQuery(db_connection, query_str)
+
+fig <- plot_ly() %>% 
+    add_bars(
+        data = df, 
+        x = df$prog_language, 
+        y = df$prog_language_count
+    ) %>% 
+    layout(
+        title = "10 Most Used Programming Languages",
+        xaxis = list(
+            categoryorder = "array",
+            categoryarray = df$prog_language_count
+        )
+    )
+fig
+```
+
+### Databases
+
+
+```{r}
+query_str <- "
+    SELECT prog_language, COUNT(prog_language) AS prog_language_count
+    FROM prog_languages
+    GROUP BY prog_language
+    ORDER BY prog_language_count DESC
+    LIMIT 10;
+"
+df <- dbGetQuery(db_connection, query_str)
+
+fig <- plot_ly() %>% 
+    add_bars(
+        data = df, 
+        x = df$prog_language, 
+        y = df$prog_language_count
+    ) %>% 
+    layout(
+        title = "10 Most Used Programming Languages",
+        xaxis = list(
+            categoryorder = "array",
+            categoryarray = df$prog_language_count
+        )
+    )
+fig
+```
+
+### Web Frameworks
+
+
+```{r}
+query_str <- "
+    SELECT web_fw, COUNT(web_fw) AS web_fw_count
+    FROM web_fws
+    GROUP BY web_fw
+    ORDER BY web_fw_count DESC
+    LIMIT 10;
+"
+df <- dbGetQuery(db_connection, query_str)
+
+fig <- plot_ly() %>% 
+    add_bars(
+        data = df, 
+        x = df$web_fw, 
+        y = df$web_fw_count
+    ) %>% 
+    layout(
+        title = "10 Most Used Web Frameworks",
+        xaxis = list(
+            categoryorder = "array",
+            categoryarray = df$web_fw_count
+        )
+    )
+fig
+```
+
+### Collaboration Tools
+
+
+```{r}
+query_str <- "
+    SELECT collab_tool, COUNT(collab_tool) AS collab_tool_count
+    FROM collab_tools
+    GROUP BY collab_tool
+    ORDER BY collab_tool_count DESC
+    LIMIT 10;
+"
+df <- dbGetQuery(db_connection, query_str)
+
+fig <- plot_ly() %>% 
+    add_bars(
+        data = df, 
+        x = df$collab_tool, 
+        y = df$collab_tool_count
+    ) %>% 
+    layout(
+        title = "10 Most Used Collaboration Tools",
+        xaxis = list(
+            categoryorder = "array",
+            categoryarray = df$collab_tool_count
+        )
+    )
+fig
+```
+
+### Platforms
+
+
+```{r}
+query_str <- "
+    SELECT platform, COUNT(platform) AS platform_count
+    FROM platforms
+    WHERE platform IS NOT NULL
+    GROUP BY platform
+    ORDER BY platform_count DESC
+    LIMIT 10;
+"
+df <- dbGetQuery(db_connection, query_str)
+
+fig <- plot_ly() %>% 
+    add_bars(
+        data = df, 
+        x = df$platform, 
+        y = df$platform_count
+    ) %>% 
+    layout(
+        title = "10 Most Used Platforms",
+        xaxis = list(
+            categoryorder = "array",
+            categoryarray = df$platform_count
+        )
+    )
+fig
+```
+
+### Operating Systems
+
+
+```{r}
+query_str <- "
+    SELECT op_sys, COUNT(op_sys) AS op_sys_count
+    FROM respondents
+    WHERE op_sys IS NOT NULL
+    GROUP BY op_sys
+    ORDER BY op_sys_count DESC;
+"
+df <- dbGetQuery(db_connection, query_str)
+
+fig <- plot_ly() %>% 
+    add_bars(
+        data = df, 
+        x = df$op_sys, 
+        y = df$op_sys_count
+    ) %>% 
+    layout(
+        title = "Most Used Operating Systems",
+        xaxis = list(
+            categoryorder = "array",
+            categoryarray = df$op_sys_count
+        )
+    )
+fig
+```
+
+### Key Takeaways
+
+* JavaScript, HTML/CSS and SQL are the most used (programming) languages
+* The most used database engines are MySQL, PostgreSQL and Microsoft SQL Server
+* jQuery, React.js and Angular are the three most used web development frameworks
+* GitHub, Slack and Jira were reported as the three most used collaboration tools
+* Linux, Windows and Docker are the three leading development platforms
+* 48.32% of the respondents use Windows as their operating system, 26.56% use Linux-based systems and 25.03% use MacOS
+
+## Professional Life Data
+
+### Employment Status
+
+
+```{r}
+query_str <- "
+    SELECT employment_status, COUNT(employment_status) AS employment_status_count
+    FROM respondents
+    WHERE employment_status IS NOT NULL
+    GROUP BY employment_status
+    ORDER BY employment_status_count DESC;
+"
+df <- dbGetQuery(db_connection, query_str)
+df <- df[order(df$employment_status_count),]
+
+fig <- plot_ly() %>%
+    add_bars(
+        data = df,
+        x = df$employment_status_count,
+        y = df$employment_status
+    ) %>%
+    layout(
+        title = "Employment Status of Respondents",
+        yaxis = list(
+            categoryorder = "array",
+            categoryarray = df$employment_status_count
+        )
+    )
+fig
+```
+
+### Most Common Developer Roles
+
+
+```{r}
+query_str <- "
+    SELECT COUNT(DISTINCT id) AS num_respondents
+    FROM respondents;
+"
+num_respondents <- dbGetQuery(db_connection, query_str)[1, "num_respondents"]
+```
+
+
+```{r}
+query_str <- "
+    SELECT dev_role, COUNT(dev_role) AS dev_role_count
+    FROM dev_roles
+    WHERE dev_role IS NOT NULL
+    GROUP BY dev_role
+    ORDER BY dev_role_count DESC
+    LIMIT 10;
+"
+df <- dbGetQuery(db_connection, query_str)
+df <- df[order(df$dev_role_count),]
+
+# Relative frequencies for the key takeaways
+dev_role_backend <- df[df$dev_role == "Back-end developer","dev_role_count"] / num_respondents
+dev_role_fullstack <- df[df$dev_role == "Full-stack developer","dev_role_count"] / num_respondents
+dev_role_frontend <- df[df$dev_role == "Front-end developer","dev_role_count"] / num_respondents
+
+fig <- plot_ly() %>%
+    add_bars(
+        data = df,
+        x = df$dev_role_count,
+        y = df$dev_role
+    ) %>%
+    layout(
+        title = "10 Most Common Developer Roles",
+        yaxis = list(
+            categoryorder = "array",
+            categoryarray = df$dev_role_count
+        )
+    )
+fig
+```
+
+### Annual Compensation
+
+
+```{r}
+query_str <- "
+    SELECT yearly_compensation
+    FROM respondents
+    WHERE yearly_compensation BETWEEN 0 AND 200000;
+"
+df <- dbGetQuery(db_connection, query_str)
+# round(df$yearly_compensation / length(df$yearly_compensation), 2)
+
+bins <- list(start = 0, end = 210000, size = 15000)
+
+fig <- plot_ly() %>%
+    add_histogram(
+        data = df,
+        x = df$yearly_compensation,
+        xbins = bins
+    ) %>%
+    layout(
+        title = "Annual Compensation"
+    )
+fig
+```
+
+### Average Annual Compensation by Programming Language
+
+
+```{r}
+query_str <- "
+    SELECT 
+        prog_languages.prog_language AS prog_language, 
+        AVG(respondents.yearly_compensation) AS compensation_avg
+    FROM prog_languages
+    INNER JOIN respondents
+    ON prog_languages.respondent_id = respondents.id
+    WHERE yearly_compensation BETWEEN 0 AND 200000
+    GROUP BY prog_language
+    ORDER BY compensation_avg DESC
+    LIMIT 20;
+"
+df <- dbGetQuery(db_connection, query_str)
+df <- df[order(df$compensation_avg),]
+
+fig <- plot_ly() %>%
+    add_bars(
+        data = df,
+        x = df$compensation_avg,
+        y = df$prog_language
+    ) %>%
+    layout(
+        title = "Average Annual Compensation by Programming Language (Top 20)",
+        yaxis = list(
+            categoryorder = "array",
+            categoryarray = df$compensation_avg
+        )
+    )
+fig
+```
+
+### Average Annual Compensation by Developer Role
+
+
+```{r}
+query_str <- "
+    SELECT 
+        dev_roles.dev_role AS dev_role, 
+        AVG(respondents.yearly_compensation) AS compensation_avg
+    FROM dev_roles
+    INNER JOIN respondents
+    ON dev_roles.respondent_id = respondents.id
+    WHERE 
+        yearly_compensation BETWEEN 0 AND 200000
+        AND dev_role IS NOT NULL
+    GROUP BY dev_role
+    ORDER BY compensation_avg DESC;
+"
+df <- dbGetQuery(db_connection, query_str)
+df <- df[order(df$compensation_avg),]
+
+fig <- plot_ly() %>%
+    add_bars(
+        data = df,
+        x = df$compensation_avg,
+        y = df$dev_role
+    ) %>%
+    layout(
+        title = "Average Annual Compensation by Developer Role (Top 20)",
+        yaxis = list(
+            categoryorder = "array",
+            categoryarray = df$compensation_avg
+        )
+    )
+fig
+```
+
+### Key Takeaways
+
+* 70.9% of respondents are employed full-time. The second most common employment status is student, for 12.2% of the respondents
+* Back-end, full-stack and front-end are the most common developers roles, with 42.24%, 42.08% and 28.38% of the developers, respectively, having one or more of these roles
+* The annual income of respondents is concentrated in the interval between 30k USD and 105k USD
+* Scala, Ruby and Go developers are the most well-paid, all having an annual income above 90k USD
+* Engineering Managers are the most well-paid developers, with an annual income of over 100k USD. Senior Executives come in second with 98k USD and Site Reliability Engineers in third with 98k USD as well
+
+## Other Data
+
+### Hours of Work per Week
+
+
+```{r}
+query_str <- "
+    SELECT work_week_hrs
+    FROM respondents
+    WHERE work_week_hrs BETWEEN 0 AND 100;
+"
+df <- dbGetQuery(db_connection, query_str)
+# round(df$yearly_compensation / length(df$yearly_compensation), 2)
+
+bins <- list(start = 0, end = 100, size = 10)
+
+fig <- plot_ly() %>%
+    add_histogram(
+        data = df,
+        x = df$work_week_hrs,
+        xbins = bins
+    ) %>%
+    layout(
+        title = "Hours of Work per Week"
+    )
+fig
+```
+
+### Overtime Work Frequency
+
+
+```{r}
+query_str <- "
+    SELECT overtime, COUNT(overtime) AS overtime_count
+    FROM respondents
+    WHERE overtime IS NOT NULL
+    GROUP BY overtime;
+"
+df <- dbGetQuery(db_connection, query_str)
+
+fig <- plot_ly() %>% 
+    add_pie(
+        data = df, 
+        labels = df$overtime, 
+        values = df$overtime_count
+    ) %>% 
+    layout(title = "Overtime Work Frequency")
+fig
+```
+
+### Undergrad Major of Respondents
+
+
+```{r}
+query_str <- "
+    SELECT undegrad_major, COUNT(undegrad_major) AS undegrad_major_count
+    FROM respondents
+    WHERE undegrad_major IS NOT NULL
+    GROUP BY undegrad_major
+    ORDER BY undegrad_major_count DESC;
+"
+df <- dbGetQuery(db_connection, query_str)
+df <- df[order(df$undegrad_major_count),]
+
+fig <- plot_ly() %>%
+    add_bars(
+        data = df,
+        x = df$undegrad_major_count,
+        y = df$undegrad_major
+    ) %>%
+    layout(
+        title = "Undergrad Major of Respondents",
+        yaxis = list(
+            categoryorder = "array",
+            categoryarray = df$undegrad_major_count
+        )
+    )
+fig
+```
+
+### Solutions Used When Stuck
+
+
+```{r}
+query_str <- "
+    SELECT stuck_solution, COUNT(stuck_solution) AS stuck_solution_count
+    FROM stuck_solutions
+    WHERE stuck_solution IS NOT NULL
+    GROUP BY stuck_solution
+    ORDER BY stuck_solution_count DESC;
+"
+df <- dbGetQuery(db_connection, query_str)
+
+fig <- plot_ly() %>% 
+    add_bars(
+        data = df, 
+        x = df$stuck_solution, 
+        y = df$stuck_solution_count
+    ) %>% 
+    layout(
+        title = "Solutions Used When Stuck",
+        xaxis = list(
+            categoryorder = "array",
+            categoryarray = df$stuck_solution
+        )
+    )
+fig
+```
+
+### Most Important Job Factors
+
+
+```{r}
+query_str <- "
+    SELECT COUNT(DISTINCT id) AS num_respondents
+    FROM respondents;
+"
+num_respondents <- dbGetQuery(db_connection, query_str)[1, "num_respondents"]
+```
+
+
+```{r}
+query_str <- "
+    SELECT job_factor, COUNT(job_factor) AS job_factor_count
+    FROM job_factors
+    GROUP BY job_factor
+    ORDER BY job_factor_count DESC
+    LIMIT 10;
+"
+df <- dbGetQuery(db_connection, query_str)
+
+# Relative frequencies for the key takeaways
+job_factor_tech <- df[df$job_factor == "Technical compatibility","job_factor_count"] / num_respondents
+job_factor_culture <- df[df$job_factor == "Company culture","job_factor_count"] / num_respondents
+job_factor_schedule <- df[df$job_factor == "Flexible schedule","job_factor_count"] / num_respondents
+
+fig <- plot_ly() %>% 
+    add_bars(
+        data = df, 
+        x = df$job_factor, 
+        y = df$job_factor_count
+    ) %>% 
+    layout(
+        title = "10 Most Important Job Factors",
+        xaxis = list(
+            categoryorder = "array",
+            categoryarray = df$job_factor_count
+        )
+    )
+fig
+```
+
+### Key Takeaways
+
+* The large majority of respondents spend 40 to 50 hours at work, each week
+* A quarter of the respondents report working overtime often, that is, at least once per week. On the other hand, a quarter of the respondents also report never working overtime or rarely
+* Computer Science, Computer Engineering and Software Engineering are by far the most common undergrad major. Engineering as an area of study comes in second, followed by Information Systems/Information Technologies and System Administration
+* Visiting Stack Overflow is the most used solution when stuck on a technical problem.The second most used solution is doing other work and returning to the problem later, and the third is watching help and/or tutorial videos
+* Knowing people can take more than one factor into consideration when choosing a job, technical compatibility is the most sough after, by 39.3% of the respondents. Company culture comes second with 34.1% and flexible schedule third with 33.6%
+
+## Close Database Connections
+
+
+```{r}
+dbDisconnect(db_connection)
+```
