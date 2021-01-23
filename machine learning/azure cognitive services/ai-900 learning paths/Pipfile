@@ -1,0 +1,27 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+azureml-core = "*"
+pandas = "*"
+azureml-dataprep = "*"
+requests = "*"
+azure-cognitiveservices-vision-computervision = "*"
+pillow = "*"
+matplotlib = "*"
+azure-cognitiveservices-vision-customvision = "*"
+azure-cognitiveservices-vision-face = "*"
+azure-ai-formrecognizer = "*"
+azure-cognitiveservices-language-textanalytics = "*"
+"azure.cognitiveservices.speech" = "*"
+azure-cognitiveservices-speech = "*"
+azure-cognitiveservices-language-luis = "*"
+
+[dev-packages]
+pylint = "*"
+autopep8 = "*"
+
+[requires]
+python_version = "3.7"
