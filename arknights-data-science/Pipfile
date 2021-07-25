@@ -10,6 +10,7 @@ pandas = "*"
 requests = "*"
 beautifulsoup4 = "*"
 lxml = "*"
+sklearn = "*"
 
 [dev-packages]
 autopep8 = "*"
