@@ -1,0 +1,24 @@
+Promotion-Level Sort Order = 
+VAR OpName = 'Stats (2)'[Operator]
+VAR OpLevel = 'Stats (2)'[Level]
+Var PromoLevel = 'Stats (2)'[Promotion Level]
+
+VAR CountRowsPromoLevel = CALCULATE(
+    MAX( 'Stats (2)'[Level] ),
+    FILTER(
+        ALL('Stats (2)'),
+        'Stats (2)'[Operator] = OpName && 
+        'Stats (2)'[Promotion Level] = PromoLevel &&
+        'Stats (2)'[Level] <= OpLevel
+    )
+)
+
+RETURN SWITCH(
+    TRUE(),
+    PromoLevel = 0, CountRowsPromoLevel,
+
+    PromoLevel = 1, CountRowsPromoLevel + 50,
+
+    PromoLevel = 2, CountRowsPromoLevel + 50 + 80
+
+)

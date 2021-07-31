@@ -1,0 +1,66 @@
+Promotion-Level Sort Order = 
+VAR OpName = 'Stats (2)'[Operator]
+VAR OpLevel = 'Stats (2)'[Level]
+Var PromoLevel = 'Stats (2)'[Promotion Level]
+VAR OpRarity = RELATED( Operators[Rarity] )
+
+VAR E0MaxLevel = CALCULATE(
+    MAX( 'Stats (2)'[Level] ),
+    FILTER(
+        ALL('Stats (2)'),
+        'Stats (2)'[Operator] = OpName && 
+        'Stats (2)'[Promotion Level] = 0
+    )
+)
+VAR E1MaxLevel = CALCULATE(
+    MAX( 'Stats (2)'[Level] ),
+    FILTER(
+        ALL('Stats (2)'),
+        'Stats (2)'[Operator] = OpName && 
+        'Stats (2)'[Promotion Level] = 1
+    )
+)
+VAR E2MaxLevel = CALCULATE(
+    MAX( 'Stats (2)'[Level] ),
+    FILTER(
+        ALL('Stats (2)'),
+        'Stats (2)'[Operator] = OpName && 
+        'Stats (2)'[Promotion Level] = 2
+    )
+)
+
+
+VAR CountRowsPromoLevel = CALCULATE(
+    MAX( 'Stats (2)'[Level] ),
+    FILTER(
+        ALL('Stats (2)'),
+        'Stats (2)'[Operator] = OpName && 
+        'Stats (2)'[Promotion Level] = PromoLevel &&
+        'Stats (2)'[Level] <= OpLevel
+    )
+)
+
+VAR E0Jump = SWITCH(
+    TRUE(),
+    OpRarity = 3, 40,
+    OpRarity = 4, 45,
+    OpRarity = 5, 50,
+    OpRarity = 6, 50
+)
+
+VAR E1Jump = SWITCH(
+    TRUE(),
+    OpRarity = 4, 60,
+    OpRarity = 5, 70,
+    OpRarity = 6, 80
+)
+
+RETURN SWITCH(
+    TRUE(),
+    PromoLevel = 0, CountRowsPromoLevel,
+
+    PromoLevel = 1, CountRowsPromoLevel + E0Jump,
+
+    PromoLevel = 2, CountRowsPromoLevel + E0Jump + E1Jump
+
+)

@@ -1,0 +1,47 @@
+Promotion-Level Sort Order = 
+VAR OpName = Stats[Operator]
+VAR OpLevel = Stats[Level]
+Var PromoLevel = Stats[Promotion Level]
+
+VAR CountRowsPromoLevel = CALCULATE(
+    MAX( Stats[Level] ),
+    FILTER(
+        ALL(Stats),
+        Stats[Operator] = OpName && 
+        Stats[Promotion Level] = PromoLevel &&
+        Stats[Level] <= OpLevel
+    )
+)
+
+VAR Elite0MaxLevel = CALCULATE(
+    MAX( Stats[Level] ),
+    FILTER(
+        ALL(Stats),
+        Stats[Promotion Level] = 0 &&
+        RELATED( Operators[Rarity]) = 6
+    )
+)
+VAR Elite1MaxLevel = CALCULATE(
+    MAX( Stats[Level] ),
+    FILTER(
+        ALL(Stats),
+        Stats[Promotion Level] = 1 &&
+        RELATED( Operators[Rarity]) = 6
+    )
+)
+VAR Elite2MaxLevel = CALCULATE(
+    MAX( Stats[Level] ),
+    FILTER(
+        ALL(Stats),
+        Stats[Promotion Level] = 2 &&
+        RELATED( Operators[Rarity]) = 6
+    )
+)
+
+
+RETURN SWITCH(
+    TRUE(),
+    PromoLevel = 0, CountRowsPromoLevel,
+    PromoLevel = 1, CountRowsPromoLevel + Elite0MaxLevel,
+    PromoLevel = 2, CountRowsPromoLevel + Elite0MaxLevel + Elite1MaxLevel
+)
