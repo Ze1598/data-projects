@@ -1,0 +1,5 @@
+{
+    "subscription_id": "your_azure_sub_id",
+    "resource_group": "your_rg_name",
+    "workspace_name": "your_azure_mlstudio_name"
+}
