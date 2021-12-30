@@ -1,0 +1,6 @@
+*.vscode
+*__pycache__
+.pytest_cache
+*build
+*dist
+/machine learning/sp500-forecast/data/data
