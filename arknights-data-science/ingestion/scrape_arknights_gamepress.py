@@ -128,6 +128,10 @@ def get_stats_per_level(num_levels: int, df: pd.DataFrame) -> pd.DataFrame:
 # Get data for each available operator
 for operator in op_dict:
     logging.info(f"{datetime.datetime.now()}: Scraping {operator}")
+    
+    # Skip non playable characters
+    if "Reserve Operator" in operator:
+        continue
 
     # These character pages are still a WIP on the wiki so they break the script :(
     # wip_characters = ["Tequila", "La Pluma", "Mizuki", "Ch'en The Holungday"]
