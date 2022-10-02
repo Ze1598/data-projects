@@ -1,4 +1,4 @@
-﻿// Exercise 1
+﻿// Challenge 1
 Onboarding
 | summarize  total_score = sum(Score)
 | project total_score
@@ -6,7 +6,7 @@ Onboarding
 
 
 //////////////////////////////////////////////////////////
-// Exercise 2
+// Challenge 2
 
 // Check how much the missing book weighs - 1764
 Books
@@ -23,3 +23,27 @@ Shelves
 | extend weight_difference = total_weight - current_weight
 | order by weight_difference desc 
 | project shelf, total_weight, current_weight, weight_difference
+
+
+//////////////////////////////////////////////////////////
+// Challenge 3
+
+// let multipleVoters =
+// Votes
+// | summarize c = count() by voter_hash_id
+// | where c > 1
+// | project voter_hash_id;
+Votes
+// | where not(voter_hash_id in (multipleVoters))
+// Lots of votes for same candidate from a single machine in less than a minute, so aggegate machine votes at the minute granularity
+| extend dt = format_datetime(Timestamp, "yyyy-MM-dd HH:mm")
+| summarize c = count() by via_ip, vote, dt
+// And keep only the credible votes (filters out e.g. 200+ votes for one candidate in a single machine for a one minute period)
+| where c < 50
+// Sum votes because they are already aggegated by ip and candidate
+| summarize Count = sum(c) by vote
+// Rest is provided code by exercise
+| as hint.materialized=true T
+| extend Total = toscalar(T | summarize sum(Count))
+| project vote, Percentage = round(Count*100.0 / Total, 1), Count
+| order by Count
