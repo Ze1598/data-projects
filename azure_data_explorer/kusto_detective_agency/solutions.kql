@@ -1,4 +1,4 @@
-﻿// Challenge 1
+﻿// Onboarding
 Onboarding
 | summarize  total_score = sum(Score)
 | project total_score
@@ -6,7 +6,18 @@ Onboarding
 
 
 //////////////////////////////////////////////////////////
-// Challenge 2
+// Challenge 1
+
+.execute database script <|
+// Create table for the books
+.create-merge table Books(rf_id:string, book_title:string, publish_date:long, author:string, language:string, number_of_pages:long, weight_gram:long)
+// Import data for books
+// (Used data is utilzing catalogue from https://github.com/internetarchive/openlibrary )
+.ingest into table Books ('https://kustodetectiveagency.blob.core.windows.net/digitown-books/books.csv.gz') with (ignoreFirstRecord=true)
+// Create table for the shelves
+.create-merge table Shelves (shelf:long, rf_ids:dynamic, total_weight:long) 
+// Import data for shelves
+.ingest into table Shelves ('https://kustodetectiveagency.blob.core.windows.net/digitown-books/shelves.csv.gz') with (ignoreFirstRecord=true)
 
 // Check how much the missing book weighs - 1764
 Books
@@ -26,7 +37,22 @@ Shelves
 
 
 //////////////////////////////////////////////////////////
-// Challenge 3
+// Challenge 2
+
+.execute database script <|
+// Ingestion may take ~40sec to complete, total 5M+ records
+.create-merge table Votes (Timestamp:datetime, vote:string, via_ip:string, voter_hash_id:string)
+.ingest async into table Votes (@'https://kustodetectiveagency.blob.core.windows.net/digitown-votes/votes_1.csv.gz')
+.ingest async into table Votes (@'https://kustodetectiveagency.blob.core.windows.net/digitown-votes/votes_2.csv.gz')
+.ingest async into table Votes (@'https://kustodetectiveagency.blob.core.windows.net/digitown-votes/votes_3.csv.gz')
+
+// Query that counts the votes:
+Votes
+| summarize Count=count() by vote
+| as hint.materialized=true T
+| extend Total = toscalar(T | summarize sum(Count))
+| project vote, Percentage = round(Count*100.0 / Total, 1), Count
+| order by Count
 
 // let multipleVoters =
 // Votes
@@ -51,7 +77,8 @@ Votes
 
 
 //////////////////////////////////////////////////////////
-// Challenge 4
+// Challenge 3
+
 .execute database script <|
 // Create the table with the traffic information.
 // The data loading process estimated to take ~3-4min to complete (114M+ rows of data).
