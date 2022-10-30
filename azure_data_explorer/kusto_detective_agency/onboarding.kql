@@ -1,0 +1,4 @@
+// Onboarding
+Onboarding
+| summarize  total_score = sum(Score)
+| project total_score

@@ -1,0 +1,34 @@
+.execute database script <|
+// Ingestion may take ~40sec to complete, total 5M+ records
+.create-merge table Votes (Timestamp:datetime, vote:string, via_ip:string, voter_hash_id:string)
+.ingest async into table Votes (@'https://kustodetectiveagency.blob.core.windows.net/digitown-votes/votes_1.csv.gz')
+.ingest async into table Votes (@'https://kustodetectiveagency.blob.core.windows.net/digitown-votes/votes_2.csv.gz')
+.ingest async into table Votes (@'https://kustodetectiveagency.blob.core.windows.net/digitown-votes/votes_3.csv.gz')
+
+// Query that counts the votes:
+Votes
+| summarize Count=count() by vote
+| as hint.materialized=true T
+| extend Total = toscalar(T | summarize sum(Count))
+| project vote, Percentage = round(Count*100.0 / Total, 1), Count
+| order by Count
+
+// let multipleVoters =
+// Votes
+// | summarize c = count() by voter_hash_id
+// | where c > 1
+// | project voter_hash_id;
+Votes
+// | where not(voter_hash_id in (multipleVoters))
+// Lots of votes for same candidate from a single machine in less than a minute, so aggegate machine votes at the minute granularity
+| extend dt = format_datetime(Timestamp, "yyyy-MM-dd HH:mm")
+| summarize c = count() by via_ip, vote, dt
+// And keep only the credible votes (filters out e.g. 200+ votes for one candidate in a single machine for a one minute period)
+| where c < 50
+// Sum votes because they are already aggegated by ip and candidate
+| summarize Count = sum(c) by vote
+// Rest is provided code by exercise
+| as hint.materialized=true T
+| extend Total = toscalar(T | summarize sum(Count))
+| project vote, Percentage = round(Count*100.0 / Total, 1), Count
+| order by Count

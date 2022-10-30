@@ -1,0 +1,26 @@
+.execute database script <|
+// Create table for the books
+.create-merge table Books(rf_id:string, book_title:string, publish_date:long, author:string, language:string, number_of_pages:long, weight_gram:long)
+// Import data for books
+// (Used data is utilzing catalogue from https://github.com/internetarchive/openlibrary )
+.ingest into table Books ('https://kustodetectiveagency.blob.core.windows.net/digitown-books/books.csv.gz') with (ignoreFirstRecord=true)
+// Create table for the shelves
+.create-merge table Shelves (shelf:long, rf_ids:dynamic, total_weight:long) 
+// Import data for shelves
+.ingest into table Shelves ('https://kustodetectiveagency.blob.core.windows.net/digitown-books/shelves.csv.gz') with (ignoreFirstRecord=true)
+
+// Check how much the missing book weighs - 1764
+Books
+| where (book_title == "De Revolutionibus Magnis Data")
+| project rf_id, weight_gram
+
+// Calculate the difference between the weight of each shelf and how much it currently weighs
+// The shelf with largest difference will be the one the book belongs to
+// According to the exercise there is a small margin of error between real weight and measurements so the difference is rarely zero
+Shelves 
+| mv-expand rf_id = rf_ids to typeof(string) 
+| lookup Books on rf_id 
+| summarize total_weight = avg(total_weight), current_weight = sum(weight_gram) by shelf = shelf 
+| extend weight_difference = total_weight - current_weight
+| order by weight_difference desc 
+| project shelf, total_weight, current_weight, weight_difference

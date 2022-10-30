@@ -1,0 +1,36 @@
+.execute database script <|
+// Create the table with the traffic information.
+// The data loading process estimated to take ~3-4min to complete (114M+ rows of data).
+// Notes: VIN - is Vehicle ID 
+.create-merge table Traffic (Timestamp:datetime, VIN:string, Ave:int, Street:int)
+.ingest async into table Traffic (@'https://kustodetectiveagency.blob.core.windows.net/digitown-traffic/log_00000.csv.gz')
+.ingest async into table Traffic (@'https://kustodetectiveagency.blob.core.windows.net/digitown-traffic/log_00001.csv.gz')
+.ingest async into table Traffic (@'https://kustodetectiveagency.blob.core.windows.net/digitown-traffic/log_00002.csv.gz')
+
+
+// Cars that passed by the bank
+let passedByBank =
+Traffic
+| where Ave == 157 and Street == 148
+| distinct VIN
+;
+// Cars moving during the robbery
+let movingDuringRobbery =
+Traffic
+| where 
+    Timestamp >= datetime('2022-10-16T08:17:00Z')
+    and Timestamp < datetime('2022-10-16T08:32:00Z')
+| distinct VIN
+;
+// Cars stopped during the robbery
+let stoppedDuringRobbery =
+Traffic
+| distinct VIN
+| where not(VIN in (movingDuringRobbery))
+;
+// Find all stopping places for 3 cars, for cars that passed by the bank and were stopped during the robbery
+Traffic
+| where VIN in (stoppedDuringRobbery) and VIN in (passedByBank)
+| summarize arg_max(Timestamp, *) by VIN
+| summarize c = count() by Ave, Street
+| where c == 3

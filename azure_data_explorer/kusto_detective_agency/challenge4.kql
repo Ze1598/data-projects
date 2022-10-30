@@ -1,0 +1,117 @@
+﻿// Ingest CSV
+.create table ['PrimeNumbers']  (['number']:long)
+.create table ['PrimeNumbers'] ingestion csv mapping 'PrimeNumbers_mapping' '[{"column":"number", "Properties":{"Ordinal":"0"}}]'
+.ingest async into table ['PrimeNumbers'] (h'[SAS URL]') with (format='csv',ingestionMappingReference='PrimeNumbers_mapping',ingestionMappingType='csv',tags="['b724621d-732d-4b4c-ac2c-49946157c61a']")
+
+
+// Find the website
+// For each prime, check if its half, half + 1 and half - 1 are prime numbers
+// Special prime can be half-1 + half+1 + 1
+let primes = materialize(
+    PrimeNumbers 
+    | project n = number 
+)
+;
+PrimeNumbers
+| order by number desc
+| extend 
+    half = tolong(number / 2),
+    halfMinus1 = tolong(number / 2) - 1,
+    halfPlus1 = tolong(number / 2) + 1
+| join kind=leftouter
+    primes
+    on  $left.half == $right.n
+| join kind=leftouter
+    primes
+    on  $left.halfMinus1 == $right.n
+| join kind=leftouter
+    primes
+    on  $left.halfPlus1 == $right.n
+| where 
+    (isnotnull(n1) and isnotnull(n2))
+    or (isnotnull(n) and isnotnull(n2))
+    or (isnotnull(n) and isnotnull(n1))
+| summarize max(number)
+
+
+// Run additional pre reqs
+.execute database script <|
+// The data below is from https://data.cityofnewyork.us/Environment/2015-Street-Tree-Census-Tree-Data/uvpi-gqnh 
+// The size of the tree can be derived using 'tree_dbh' (tree diameter) column.
+.create-merge table nyc_trees (
+    tree_id:int, block_id:int, created_at:datetime, tree_dbh:int, stump_diam:int, 
+    curb_loc:string, status:string, health:string, spc_latin:string, spc_common:string, steward:string,
+    guards:string, sidewalk:string, user_type:string, problems:string, root_stone:string, root_grate:string,
+    root_other:string, trunk_wire:string, trnk_light:string, trnk_other:string, brch_light:string, brch_shoe:string,
+    brch_other:string, address:string, postcode:int, zip_city:string, community_board:int, borocode:int, borough:string,
+    cncldist:int, st_assem:int, st_senate:int, nta:string, nta_name:string, boro_ct:string, ['state']:string,
+    latitude:real, longitude:real, x_sp:real, y_sp:real, council_district:int, census_tract:int, ['bin']:int, bbl:long
+)
+with (docstring = "2015 NYC Tree Census")
+.ingest async into table nyc_trees ('https://kustodetectiveagency.blob.core.windows.net/el-puente/1.csv.gz')
+.ingest async into table nyc_trees ('https://kustodetectiveagency.blob.core.windows.net/el-puente/2.csv.gz')
+.ingest async into table nyc_trees ('https://kustodetectiveagency.blob.core.windows.net/el-puente/3.csv.gz')
+
+// Get a virtual tour link with Latitude/Longitude coordinates
+.create-or-alter function with 
+    (docstring = "Virtual tour starts here", skipvalidation = "true")
+    VirtualTourLink(lat:real, lon:real) { 
+	print Link=strcat('https://www.google.com/maps/@', lat, ',', lon, ',4a,75y,32.0h,79.0t/data=!3m7!1e1!3m5!1s-1P!2e0!5s20191101T000000!7i16384!8i8192')
+}
+
+// Decrypt message helper function. Usage: print Message=Decrypt(message, key)
+.create-or-alter function with 
+  (docstring = "Use this function to decrypt messages")
+  Decrypt(_message:string, _key:string) { 
+    let S = (_key:string) {
+        let r = array_concat(range(48, 57, 1), range(65, 92, 1), range(97, 122, 1)); 
+        toscalar(
+            print 
+            l=r, key=to_utf8(hash_sha256(_key)) 
+            | mv-expand l to typeof(int), key to typeof(int) 
+            | order by key asc 
+            | summarize make_string(make_list(l))
+        )
+    };
+    let cypher1 = S(tolower(_key)); 
+    let cypher2 = S(toupper(_key)); 
+    coalesce(base64_decode_tostring(translate(cypher1, cypher2, _message)), "Failure: wrong key")
+}
+
+// Group the trees for each H3 cell of size 10 (66 meters)
+let h3cells =
+    nyc_trees
+    | where spc_common in ("American linden", "'Schubert' chokecherry", "Turkish hazelnut")
+    | summarize 
+        c_total = count(),
+        ids = make_list(tree_id)
+        by h3cell = geo_point_to_h3cell(longitude, latitude, 10)
+    | mv-expand t = ids to typeof(int)
+    | join kind=inner nyc_trees on $left.t == $right.tree_id
+;
+// Get the H3s with exactly four schubert trees
+let fourSchuberts =
+    h3cells
+    | summarize
+        c_species = count()
+        by h3cell, spc_common
+    | where spc_common == "'Schubert' chokecherry" and c_species == 4
+    | distinct h3cell
+;
+// Get H3s with at least one turkish tree
+let haveTurkish =
+    h3cells
+    | where spc_common == "Turkish hazelnut"
+    | distinct h3cell
+;
+// Pick only H3s that fullfil the conditions and look for the smallest linden tree in each cell
+h3cells
+| where h3cell in (fourSchuberts) and h3cell in (haveTurkish)
+| summarize arg_min(tree_dbh, *) by h3cell, spc_common
+| extend Link=strcat('https://www.google.com/maps/@', latitude, ',', longitude, ',4a,75y,32.0h,79.0t/data=!3m7!1e1!3m5!1s-1P!2e0!5s20191101T000000!7i16384!8i8192')
+
+
+print Decrypt(
+    "20INznpGzmkmK2NlZ0JILtO4OoYhOoYUB0OrOoTl5mJ3KgXrB0[8LTSSXUYhzUY8vmkyKUYevUYrDgYNK07yaf7soC3kKgMlOtHkLt[kZEclBtkyOoYwvtJGK2YevUY[v65iLtkeLEOhvtNlBtpizoY[v65yLdOkLEOhvtNlDn5lB07lOtJIDmllzmJ4vf7soCpiLdYIK0[eK27soleqO6keDpYp2CeH5d\\F\\fN6aQT6aQL[aQcUaQc[aQ57aQ5[aQDG"
+    ,"ASHES to ASHES"
+)
