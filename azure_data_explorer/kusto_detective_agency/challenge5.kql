@@ -1,0 +1,116 @@
+.execute database script <|
+.create-merge table ChatLogs (Timestamp:datetime, Message:string)
+.ingest into table ChatLogs ('https://kustodetectiveagency.blob.core.windows.net/digitown-chat/log_00000.csv.gz')
+.ingest into table ChatLogs ('https://kustodetectiveagency.blob.core.windows.net/digitown-chat/log_00001.csv.gz')
+
+// Users and channels they used
+let userChannel =
+ChatLogs
+| where
+    Message has 'sent message to the channel'
+    or Message has 'joined the channel'
+    or Message has 'left the channel'
+| extend
+    user = tostring(split(Message, '\'')[1]),
+    channel = tostring(split(Message, '\'')[3])
+| distinct user, channel
+;
+// Users from channels with at least one message and 4 users
+let channel4 =
+userChannel
+| join kind=inner (
+    userChannel 
+    | summarize count() by channel 
+    | where count_ == 4 
+    | project channel
+) on $left.channel == $right.channel
+| join kind=inner (
+    ChatLogs
+    | where Message has 'sent message to the channel'
+    | extend channel = tostring(split(Message, '\'')[3])
+    | distinct channel
+) on $left.channel == $right.channel
+| distinct channel
+;
+// Check for messages sent to channals and people joining channels
+// Trick is to only considers channels of 4 users and look for instances with 4+ events in a 1-minute window
+let targetChannel =
+ChatLogs
+| where
+    Message has 'sent message to the channel'
+    or Message has 'joined the channel'
+| extend 
+    user = tostring(split(Message, '\'')[1]),
+    channel =  tostring(split(Message, '\'')[3]),
+    day = datetime_part("day", Timestamp),
+    hour = datetime_part("hour", Timestamp),
+    minute = datetime_part("minute", Timestamp)
+// Assume channel only has 4 members i.e. 4 gangsters
+| join kind=inner channel4 on $left.channel == $right.channel
+// Assume messages were sent and read within a minute window
+| summarize c1 = count() by channel, day, hour, minute
+// Only count instances with at least 4 events (e.g. sent message to channel and 3 people joined the server)
+| where c1 >= 4
+| distinct channel
+;
+// Find users from the channel
+let gangUsers =
+ChatLogs
+| where Message has(toscalar(targetChannel))
+| extend user = tostring(split(Message, '\'')[1])
+| distinct user
+;
+// And find their IPs
+ChatLogs
+| where Message has('logged in')
+| extend 
+    user = tostring(split(Message, '\'')[1]),
+    ip = tostring(split(Message, '\'')[3])
+| where user in (gangUsers)
+| extend sneakLink = strcat('https://sneakinto.z13.web.core.windows.net/', ip)
+| distinct sneakLink
+
+// Get lat long for following image
+// https://tool.geoimgr.com/ > https://sneakinto.z13.web.core.windows.net/146.49.19.37/image3.jpg
+
+// Text from the email and key from the answer of challenge 4
+// 1) Utility to discover secondary messages.
+// Usage: ReadMessage(Message, Key)
+let ReadMessage = (Message:string, Key:string) 
+{
+    let m = Message; let K = Key; let l = toscalar(print s = split(split(K,':')[1], ',') | mv-expand s | summarize make_list(tolong(s)));
+    let ma = (i1:long, i2:long) { make_string(repeat(tolong(l[i1])-tolong(l[i2]), 1))}; 
+    let ms = (d:dynamic, s:long, e:long) { make_string(array_slice(d, s, e)) };   
+    let mc = m has '...';
+    print s=split(split(replace_regex(m, @'[\s\?]+', ' '),substring(K,9,3))[1], ' ')
+    | mv-expand with_itemindex=r s to typeof(string) | serialize 
+    | where r in (l)
+    | extend s = iif(r-1 == prev(r), replace_string(strcat(prev(s), s),'o','ou'), s)
+    | where (r+1 != next(r))
+    | summarize s=strcat_array(make_list(s), iff(mc, '+%2B', ' '))
+    | extend k = series_subtract(series_add(to_utf8(K), l), repeat(23, 10))
+    | project result=iif(mc, strcat(ms(k,0,3), ma(8,2), ms(k,4,6), ms(l,8,8), ms(k,7,7), ma(8,0), s), s)
+};
+ReadMessage(
+```
+Did you see that?! Kastor the Elephant was chosen as a city mascot! 
+This is nonsense! Every time I think of it, another Poppy the goldfish dies. 
+We will strike back, and when we do — they will feel the anger of the escaping elephant! 
+
+In past, we've talked much about the wealth and about importance of thinking out of the box, and I think I just got an inspiring idea just by watching popular science course about Big Data. You should watch it too... 
+
+So, we have our target: the Project X is ON! 
+
+And now, the day of strike is becoming obvious to me as well. 
+1) Get the picture of the Project X's target and see the date it was taken (Datel). 
+2) There was another historical nonsense event happened at year YYYY, and it reminds me of today (I will send a link later). 
+We will use that event as a reference point. The day of our action will be: 
+Datel + ((YYYY % 1000) days)) 
+
+We're in the game! 
+
+JG, the Mayor 
+```,
+h@'wytaPUJM!PS:2,7,17,29,42,49,58,59,63'
+)
+// result: bing.com?q=
