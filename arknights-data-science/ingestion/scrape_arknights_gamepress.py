@@ -3,6 +3,7 @@ import datetime
 import logging
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
 # Install web drivers dynamically
 from webdriver_manager.chrome import ChromeDriverManager
 import pandas as pd
@@ -41,11 +42,12 @@ with open("operator_pages.pickle", "wb") as f:
     logging.info(f"{datetime.datetime.now()}: Created pickle file with operator pages")
 
 # Running dataframe to collect operator data into
-main_df = pd.DataFrame(
+main_df = pd.DataFrame.from_dict(
     {
         "operator": list(),
         "rarity": list(),
         "class": list(),
+        "subclass": list(),
         "promotion_level": list(),
         "level": list(),
         "hp": list(),
@@ -71,25 +73,24 @@ main_df = pd.DataFrame(
 # }
 
 def get_stats_per_level(num_levels: int, df: pd.DataFrame) -> pd.DataFrame:
-
     for i in range(num_levels):
 
         # Current elite rank
-        promotion_level_selected_elem = driver.find_element_by_class_name("current-button")
+        promotion_level_selected_elem = driver.find_element(By.CLASS_NAME, "current-button")
         promotion_level = "0" if promotion_level_selected_elem.text == "Non-Elite" else promotion_level_selected_elem.text[-1]
 
         # Current operator level
-        operator_level = driver.find_element_by_id("myRange").get_attribute('value')
+        operator_level = driver.find_element(By.ID, "myRange").get_attribute('value')
 
         # Hp, Atk, Def
-        stats_container_elem = driver.find_element_by_id("stats-container")
+        stats_container_elem = driver.find_element(By.ID, "stats-container")
         # Split the stat names and values into a list (split at newlines)
         stats_split = stats_container_elem.text.splitlines()
         # Get the individual stat values
         op_hp, op_atk, op_def = stats_split[1], stats_split[3], stats_split[5]
 
         # Other stats
-        other_stats_container_elem = driver.find_element_by_class_name("other-stat-cell")
+        other_stats_container_elem = driver.find_element(By.CLASS_NAME, "other-stat-cell")
         # Split the stat names and values into a list (split at newlines)
         other_stats_split = other_stats_container_elem.text.splitlines()
         # Get the individual stat values
@@ -100,6 +101,7 @@ def get_stats_per_level(num_levels: int, df: pd.DataFrame) -> pd.DataFrame:
             "operator": operator,
             "rarity": operator_rarity,
             "class": operator_class,
+            "subclass": operator_subclass,
             "promotion_level": promotion_level,
             "level": operator_level,
             "hp": op_hp,
@@ -114,10 +116,9 @@ def get_stats_per_level(num_levels: int, df: pd.DataFrame) -> pd.DataFrame:
             "global_release_date": global_release_date,
             "is_limited": operator_is_limited
         }
-        df = df.append(row_to_append, ignore_index=True)
-
+        df = pd.concat([df, pd.DataFrame([row_to_append], columns=df.columns)], ignore_index=True)
         # Get the arrow to increase operator level
-        increase_level_button = driver.find_element_by_class_name("fa-arrow-right")
+        increase_level_button = driver.find_element(By.CLASS_NAME, "fa-arrow-right")
         # Click the button (increase 1 level)
         increase_level_button.click()
 
@@ -128,7 +129,6 @@ def get_stats_per_level(num_levels: int, df: pd.DataFrame) -> pd.DataFrame:
 # Get data for each available operator
 for operator in op_dict:
     logging.info(f"{datetime.datetime.now()}: Scraping {operator}")
-    
     # Skip non playable characters
     if "Reserve Operator" in operator:
         continue
@@ -147,40 +147,42 @@ for operator in op_dict:
 
     # Select an element down in the page to scroll down to
     # This makes a sticky ad appear
-    scroll_to_element = driver.find_element_by_class_name("popular-items-block")
+    scroll_to_element = driver.find_element(By.CLASS_NAME, "popular-items-block")
     actions.move_to_element(scroll_to_element).perform()
     # Close sticky ad
-    sticky_ad_close_btn = driver.find_element_by_id("closeIcon")
-    sticky_ad_close_btn.click()
+    # sticky_ad_close_btn = driver.find_element(By.ID, "closeIcon")
+    # sticky_ad_close_btn.click()
 
     # First thing we need before reading data: decrease the operator level (even if it is already at the lowest level possible)
     # Otherwise some stats may be missing
-    decrease_level_button = driver.find_element_by_class_name("fa-arrow-left")
+    decrease_level_button = driver.find_element(By.CLASS_NAME, "fa-arrow-left")
     decrease_level_button.click()
 
     # List of 3 buttons for each promotion level (E0, E1, E2)
-    rank_buttons = driver.find_elements_by_class_name("rank-button")
+    rank_buttons = driver.find_elements(By.CLASS_NAME, "rank-button")
 
     # Read the opreator class
-    operator_class = driver.find_element_by_class_name("profession-title").text.strip()
+    operator_class = driver.find_elements(By.CLASS_NAME, "profession-title")[0].text.strip()
+    # Read the operator subclass 
+    operator_subclass = driver.find_elements(By.CLASS_NAME, "profession-title")[1].text.strip()
     # Read the operator rarity by counting the number of stars in their rarity
     operator_rarity = len(
         driver
-        .find_element_by_class_name("rarity-cell")
-        .find_elements_by_tag_name("img")
+        .find_element(By.CLASS_NAME, "rarity-cell")
+        .find_elements(By.TAG_NAME, "img")
     )
 
     # HTML tables with info on operator release date and availability limit status
-    obtain_approach_tables = driver.find_element_by_class_name("obtain-approach-table").find_elements_by_tag_name("table")
+    obtain_approach_tables = driver.find_element(By.CLASS_NAME, "obtain-approach-table").find_elements(By.TAG_NAME, "table")
 
     # Get the release date in the chinese server
-    cn_release_date = obtain_approach_tables[1].find_elements_by_tag_name("tr")[0].find_element_by_tag_name("td").text
+    cn_release_date = obtain_approach_tables[1].find_elements(By.TAG_NAME, "tr")[0].find_element(By.TAG_NAME, "td").text
     # Get the release date in the global server
-    global_release_date = obtain_approach_tables[1].find_elements_by_tag_name("tr")[1].find_element_by_tag_name("td").text
+    global_release_date = obtain_approach_tables[1].find_elements(By.TAG_NAME, "tr")[1].find_element(By.TAG_NAME, "td").text
     # Text with headhunting availability status
-    headhunting_type = obtain_approach_tables[0].find_elements_by_tag_name("tr")[0].find_element_by_tag_name("td").text
+    headhunting_type = obtain_approach_tables[0].find_elements(By.TAG_NAME, "tr")[0].find_element(By.TAG_NAME, "td").text
     # If the text has the word limited, then the unit is limited
-    operator_is_limited = True if "limited" in headhunting_type.lower() else False
+    operator_is_limited = 1 if "limited" in headhunting_type.lower() else 0
 
     # Get stats for all the promotion levels available for the current operator
 
