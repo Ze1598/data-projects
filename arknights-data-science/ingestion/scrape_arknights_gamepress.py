@@ -26,6 +26,9 @@ op_dict = {}
 for op in op_list:
     # Get the name and their personal page from these HTML elements
     name = op.find("div", class_="operator-title").a.text
+    # If the name is 'tulip', skip this iteration
+    if name.lower() == 'tulip':
+        continue
     page = "https://gamepress.gg" + \
         op.find("div", class_="operator-title").a["href"]
     # Add the new information to the dictionary
