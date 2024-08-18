@@ -1,0 +1,354 @@
+.execute database script <|
+.create-merge table StorageArchiveLogs(Timestamp:datetime, EventText:string)
+//clear any previously ingested data if such exists
+.clear table StorageArchiveLogs data
+.ingest async into table StorageArchiveLogs (@'https://kustodetectiveagency.blob.core.windows.net/kda2c5backuplogs/log_00000.csv.gz')
+.ingest async into table StorageArchiveLogs (@'https://kustodetectiveagency.blob.core.windows.net/kda2c5backuplogs/log_00001.csv.gz')
+.ingest into table StorageArchiveLogs (@'https://kustodetectiveagency.blob.core.windows.net/kda2c5backuplogs/log_00002.csv.gz')
+
+
+/////////////// ANSWER ////////////////
+// Analyse deleted files that still have archived backups for each week
+// First get all delete attempts
+let hasDeleteAttempt =
+    StorageArchiveLogs
+    | where EventText has 'Delete'
+    // | where Timestamp between (todatetime('2023-06-26T00:00:00.0000000Z') .. todatetime('2023-07-03T00:00:00.0000000Z'))
+    | extend blob = tostring(split(EventText, "'")[1])
+    | extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+;
+// Now get only blobs that were ever partially deleted, exclude those purged
+let partialDelete =
+    hasDeleteAttempt
+    // | where Timestamp between (todatetime('2023-06-14T00:00:00.0000000Z') .. todatetime('2023-06-21T00:00:00.0000000Z'))
+    // | where Timestamp between (todatetime('2023-06-21T00:00:00.0000000Z') .. todatetime('2023-06-28T00:00:00.0000000Z'))
+    // | where Timestamp between (todatetime('2023-06-28T00:00:00.0000000Z') .. todatetime('2023-07-05T00:00:00.0000000Z'))
+    // | where Timestamp between (todatetime('2023-07-05T00:00:00.0000000Z') .. todatetime('2023-07-07T00:00:00.0000000Z'))
+    // | where Timestamp between (todatetime('2023-07-07T00:00:00.0000000Z') .. todatetime('2023-07-15T00:00:00.0000000Z'))
+    | join kind=inner hasDeleteAttempt on blob
+    // Only care to know if it was purged at least once, if not then some archival still exists
+    | extend isPurged = iff(EventText1 has 'backup is completely removed', 1, 0)
+    | summarize 
+        deleteTs = max(Timestamp1)
+        ,purgeCount = sum(isPurged)
+        by blob
+    | where purgeCount == 0 
+    | extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+    | project deleteTs, blob, adls
+;
+// Get total reads per ADLS to know their popularity
+let readsByAdls =
+    StorageArchiveLogs
+    | where EventText has 'Read'
+    | extend blob = tostring(split(EventText, "'")[1])
+    | extend reads = toint(replace_string(extract("\\((.*?)\\)", 1, EventText), ' reads', ''))
+    | extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+    | summarize totalAdlsReads = sum(reads) by adls, blob
+    | summarize totalAdlsReads = sum(totalAdlsReads) by adls
+    | project adls, totalAdlsReads
+;
+// Finally pick up any create activities to know which blobs were ever captured by logs
+// Only keep files that were partially deleted because we know the author attempted deletion of the video shortly after the upload
+// Also get the total reads on the respective ADLS to know if the deletion was from a popular ADLS
+// Calculate the time to live of the file to find the answer as the file wih the lowest TTL from a popular ADLS (more than 10k reads)
+// P.S. do not consider .mp2 files because we want a video file
+StorageArchiveLogs
+| where EventText has 'Create'
+| extend blob = tostring(split(EventText, "'")[1])
+| where not(blob has '.mp2')
+| extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+| join kind=inner partialDelete on blob
+| extend ttl = datetime_diff('day', deleteTs, Timestamp)
+| extend blobPath = tostring(parse_url(blob).Path)
+| extend blobDir = strcat(adls, '/',  tostring(split(blobPath, '/')[1]) )
+| extend backupUrl = strcat('https://storagebackup.azureedge.net/', adls, blobPath)
+| join kind=inner readsByAdls on adls
+| project 
+    createTs = Timestamp
+    ,deleteTs
+    ,ttl
+    ,totalAdlsReads
+    ,backupUrl
+    ,adls
+    ,blobPath
+    ,blobDir
+    ,blob
+| where ttl < 10 and totalAdlsReads > 10000
+| top 1 by ttl asc
+/////////////// ANSWER ////////////////
+
+
+// Get distinct actions
+StorageArchiveLogs
+| extend actions = substring(EventText, 0, 25)
+| distinct actions
+
+
+// Get blobs leftover in archive that were previously archived
+let backedUp =
+    StorageArchiveLogs
+    | extend blob = tostring(split(EventText, "'")[1])
+    | distinct blob
+;
+StorageArchiveLogs
+| where EventText has 'some parts may still be available in the archive location' 
+| extend blob = tostring(split(EventText, "'")[1])
+| join kind=innerunique backedUp on blob
+
+
+
+// Get ADLS read anomalies based on deleted blobs
+let deletedReads =
+    StorageArchiveLogs
+    | where EventText has 'Read blob transaction:'
+    | extend blob = tostring(split(EventText, "'")[1])
+    | extend reads = toint(replace_string(extract("\\((.*?)\\)", 1, EventText), ' reads', ''))
+    | extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+    | join kind=inner
+        (
+            StorageArchiveLogs
+            | where EventText has 'Delete' 
+            | extend blob = tostring(split(EventText, "'")[1])
+            | distinct blob
+        ) 
+        on blob
+    | summarize sum_deletedreads = sum(reads) by adls, bin(Timestamp, 7d)
+;
+StorageArchiveLogs
+| where EventText has 'Read blob transaction:'
+| extend blob = tostring(split(EventText, "'")[1])
+| extend reads = toint(replace_string(extract("\\((.*?)\\)", 1, EventText), ' reads', ''))
+| extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+| summarize sum_reads = sum(reads) by adls, bin(Timestamp, 7d)
+| join kind=leftouter deletedReads on adls, Timestamp
+| extend real_reads = iff(isnull(sum_deletedreads), sum_reads, sum_reads - sum_deletedreads)
+
+
+// Get ADLS with most reads v1
+StorageArchiveLogs
+| where EventText has 'Read blob transaction:'
+| extend blob = tostring(split(EventText, "'")[1])
+| extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+| summarize c = count() by adls
+| top 100 by c desc 
+
+// Get ADLS with most reads v2
+StorageArchiveLogs
+| where EventText has 'Read blob transaction:'
+| extend blob = tostring(split(EventText, "'")[1])
+| summarize c = count() by blob
+| extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+| summarize c2 = sum(c) by adls
+| top 10 by c2 desc
+
+// Get ADLS with most reads v3
+StorageArchiveLogs
+| where EventText has 'Read blob transaction:'
+| extend blob = tostring(split(EventText, "'")[1])
+| extend reads = toint(replace_string(extract("\\((.*?)\\)", 1, EventText), ' reads', ''))
+| summarize totalBlobReads = sum(reads) by blob
+| extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+| summarize totalAdlsReads = sum(totalBlobReads) by adls
+| top 10 by totalAdlsReads desc
+
+
+// Get ADLS read anomalies based on deleted blobs
+let deletedReads =
+    StorageArchiveLogs
+    | where EventText has 'Read blob transaction:'
+    | extend blob = tostring(split(EventText, "'")[1])
+    | extend delete_reads = toint(replace_string(extract("\\((.*?)\\)", 1, EventText), ' reads', ''))
+    // | extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+    | join kind=inner
+        (
+            StorageArchiveLogs
+            | where EventText has 'Delete' 
+            | extend blob = tostring(split(EventText, "'")[1])
+            | distinct blob
+        ) 
+        on blob
+    // | summarize sum_deletedreads = sum(reads) by adls, bin(Timestamp, 7d)
+;
+StorageArchiveLogs
+| where EventText has 'Read blob transaction:'
+| extend blob = tostring(split(EventText, "'")[1])
+| extend reads = toint(replace_string(extract("\\((.*?)\\)", 1, EventText), ' reads', ''))
+| extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+// // | summarize sum_reads = sum(reads) by adls, bin(Timestamp, 7d)
+// | make-series sum_reads = sum(reads) on Timestamp step 7d by adls
+| join kind=leftouter deletedReads on blob
+// | extend real_reads = iff(isnull(sum_deletedreads), sum_reads, sum_reads - sum_deletedreads)
+| extend real_reads = iff(isnull(delete_reads), reads, 0)
+| make-series real_reads_series = sum(real_reads) on Timestamp step 7d by adls
+| extend (anomalies, score, baseline) = series_decompose_anomalies(real_reads_series, 1.5, -1, 'linefit')
+| extend num_anomalies = array_sum(anomalies)
+| where num_anomalies > 0
+
+
+
+// Get potentially most famous quickly deleted blobs, uploaded by popular ADLS accounts
+let popularAdls =
+    StorageArchiveLogs
+    | where EventText has 'Read'
+    | extend blob = tostring(split(EventText, "'")[1])
+    | extend reads = toint(replace_string(extract("\\((.*?)\\)", 1, EventText), ' reads', ''))
+    | summarize totalBlobReads = sum(reads) by blob
+    | extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+    | summarize totalAdlsReads = sum(totalBlobReads) by adls
+    | join kind=inner (
+            StorageArchiveLogs
+            | where EventText has 'Delete' 
+            | extend blob = tostring(split(EventText, "'")[1])
+            | extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+            | distinct adls
+        ) on adls
+    | top 1000 by totalAdlsReads desc
+;
+let blobReads =
+    StorageArchiveLogs
+    | where EventText has 'Read'
+    | extend blob = tostring(split(EventText, "'")[1])
+    | extend reads = toint(replace_string(extract("\\((.*?)\\)", 1, EventText), ' reads', ''))
+    // | extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+    | summarize totalReads = sum(reads) by blob
+;
+StorageArchiveLogs
+| where EventText has 'Create'
+| extend blob = tostring(split(EventText, "'")[1])
+// | extend delete_reads = toint(replace_string(extract("\\((.*?)\\)", 1, EventText), ' reads', ''))
+| extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+| join kind=inner 
+    (
+        StorageArchiveLogs
+        | where EventText has 'Delete' 
+        | extend blob = tostring(split(EventText, "'")[1])
+        | extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+        | summarize delete_ts = min(Timestamp) by blob
+    ) 
+    on blob
+// | extend isDeleted = iff(isempty(blob1), 0, 1)
+// | where isempty(blob1) == false
+| extend blobDays = datetime_diff('day', delete_ts, Timestamp)
+| join kind=inner blobReads on blob
+| join kind=inner popularAdls on adls
+// | extend Host = tostring(parse_url(BlobURI).Host)
+| extend backupUrl = strcat('https://storagebackup.azureedge.net/', adls, tostring(parse_url(blob).Path))
+// | where adls in ('lkrtllckvst', 'leipcpwebnn', 'epleilmujgijdu', 'pxqvybejhss', 'ttmdbamhu', 'hpjmyosoyq', 'rsdleqxix')
+
+
+// Analyse reads by backup ADLS Path
+let popularAdls =
+    StorageArchiveLogs
+    | where EventText has 'Read'
+    | extend blob = tostring(split(EventText, "'")[1])
+    | extend reads = toint(replace_string(extract("\\((.*?)\\)", 1, EventText), ' reads', ''))
+    | summarize totalBlobReads = sum(reads) by blob
+    | extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+    | summarize totalAdlsReads = sum(totalBlobReads) by adls
+    | join kind=inner (
+            StorageArchiveLogs
+            | where EventText has 'Delete' 
+            | extend blob = tostring(split(EventText, "'")[1])
+            | extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+            | distinct adls
+        ) on adls
+    | top 1000 by totalAdlsReads desc
+;
+let blobReads =
+    StorageArchiveLogs
+    | where EventText has 'Read'
+    | extend blob = tostring(split(EventText, "'")[1])
+    | extend reads = toint(replace_string(extract("\\((.*?)\\)", 1, EventText), ' reads', ''))
+    // | extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+    | summarize totalReads = sum(reads) by blob
+;
+StorageArchiveLogs
+| where EventText has 'Create'
+| extend blob = tostring(split(EventText, "'")[1])
+// | extend delete_reads = toint(replace_string(extract("\\((.*?)\\)", 1, EventText), ' reads', ''))
+| extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+| join kind=inner 
+    (
+        StorageArchiveLogs
+        | where EventText has 'Delete' 
+        | extend blob = tostring(split(EventText, "'")[1])
+        | extend adls = replace_string(tostring(split(blob, '.')[1]), 'https://', '')
+        | summarize delete_ts = min(Timestamp) by blob
+    ) 
+    on blob
+// | extend isDeleted = iff(isempty(blob1), 0, 1)
+// | where isempty(blob1) == false
+| extend blobDays = datetime_diff('day', delete_ts, Timestamp)
+| join kind=inner blobReads on blob
+| join kind=inner popularAdls on adls
+// | extend Host = tostring(parse_url(BlobURI).Host)
+| extend blobPath = tostring(parse_url(blob).Path)
+| extend blobDir = strcat(adls, '/',  tostring(split(blobPath, '/')[1]) )
+| extend backupUrl = strcat('https://storagebackup.azureedge.net/', adls, blobPath)
+// | where adls in ('sntqptwdccedhx','ghlbknsxvcgrssr','kjviayundk')
+// | where adls in ('lkrtllckvst', 'leipcpwebnn', 'epleilmujgijdu', 'pxqvybejhss', 'ttmdbamhu', 'hpjmyosoyq', 'rsdleqxix')
+| project Timestamp, delete_ts, adls, blobDays, blob, blobPath, blobDir, backupUrl, totalAdlsReads, totalReads
+
+
+
+// Get reads per day subtracted by deleted blobs to detect anomalies
+let deletedBlobReads =
+    StorageArchiveLogs
+    | where EventText has 'Read'
+    | extend blob = tostring(split(EventText, "'")[1])
+    | extend reads = toint(replace_string(extract("\\((.*?)\\)", 1, EventText), ' reads', ''))
+    | extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+    | join kind=inner
+        (
+            StorageArchiveLogs
+            | where EventText has 'Delete' 
+            | extend blob = tostring(split(EventText, "'")[1])
+            | summarize delete_ts = min(Timestamp) by blob
+        ) 
+        on blob
+    // | extend isDeleted = iff(isempty(blob1), 0, 1)
+    // | where isempty(blob1) == false
+    | summarize totalBlobReads = sum(reads) by blob
+;
+StorageArchiveLogs
+| where EventText has 'Read'
+| extend blob = tostring(split(EventText, "'")[1])
+// | extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+| extend reads = toint(replace_string(extract("\\((.*?)\\)", 1, EventText), ' reads', ''))
+| join kind=leftouter  deletedBlobReads on blob
+| extend true_reads = iff(isempty(blob1), reads, 0)
+| make-series reads_series = sum(reads) on Timestamp step 1d
+// | render linechart
+| extend (anomalies, score, baseline) = series_decompose_anomalies(reads_series, 1.5, -1, 'linefit')
+| render anomalychart with(anomalycolumns=anomalies)
+// | extend num_anomalies = array_sum(anomalies)
+// | where num_anomalies > 0
+// | top 10 by num_anomalies desc
+
+
+// Get blobs deleted on June 22nd
+let popularAdls =
+    StorageArchiveLogs
+    | where EventText has 'Read'
+    | extend blob = tostring(split(EventText, "'")[1])
+    | extend reads = toint(replace_string(extract("\\((.*?)\\)", 1, EventText), ' reads', ''))
+    | extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+    | summarize totalAdlsReads = sum(reads) by adls
+    | top 30 by totalAdlsReads desc
+;
+StorageArchiveLogs
+| where EventText has 'Create'
+| extend blob = tostring(split(EventText, "'")[1])
+| project Timestamp, blob
+| join kind=inner (
+    StorageArchiveLogs
+    | where EventText has 'Delete' 
+        and not( EventText has 'backup is completely removed')
+    | where datetime_part('day', Timestamp) == 22
+    | extend blob = tostring(split(EventText, "'")[1])
+    | extend adls = replace_string(tostring(split(blob, '.')[0]), 'https://', '')
+    | extend blobPath = tostring(split(blob, ".net/")[1])
+    | extend backupUrl = strcat('https://storagebackup.azureedge.net/', adls, '/', blobPath)
+) on blob
+| extend ttl = datetime_diff('day', Timestamp1, Timestamp)
+| join kind=inner popularAdls on adls

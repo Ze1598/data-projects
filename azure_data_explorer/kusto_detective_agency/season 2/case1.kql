@@ -1,0 +1,19 @@
+.execute database script <|
+// The script takes ~20seconds to complete ingesting all the data.
+.set-or-replace Costs <| 
+    datatable(MeterType:string, Unit:string, Cost:double) [
+     'Water', 'Liter', 0.001562, 
+     'Electricity', 'kwH', 0.3016]
+.create-merge table Consumption (Timestamp:datetime , HouseholdId:string, MeterType:string, Consumed:double)
+//clear any previously ingested data if such exists
+.clear table Consumption data
+.ingest async into table Consumption (@'https://kustodetectiveagency.blob.core.windows.net/kda2c1taxbills/log_00000.csv.gz')
+.ingest async into table Consumption (@'https://kustodetectiveagency.blob.core.windows.net/kda2c1taxbills/log_00001.csv.gz')
+.ingest into table Consumption (@'https://kustodetectiveagency.blob.core.windows.net/kda2c1taxbills/log_00002.csv.gz')
+
+// The dataset includes duplicates entries and negative measurements which originate the calculation errors
+Consumption
+| distinct Timestamp, HouseholdId, MeterType, Consumed
+| where Consumed >= 0
+| join kind=inner Costs on MeterType
+| summarize sum(Consumed * Cost)

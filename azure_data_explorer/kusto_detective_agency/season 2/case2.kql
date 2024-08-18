@@ -1,0 +1,37 @@
+.execute database script <|
+.create-merge table PhoneCalls (Timestamp:datetime, EventType:string, CallConnectionId:string, Properties:dynamic)
+.ingest async into table PhoneCalls (@'https://kustodetectiveagency.blob.core.windows.net/kda2c2phonecalls/log_00000.csv.gz')
+.ingest async into table PhoneCalls (@'https://kustodetectiveagency.blob.core.windows.net/kda2c2phonecalls/log_00001.csv.gz')
+// Last command is running sync, so when it finishes the data is already ingested.
+// It can take about 1min to run.
+.ingest into table PhoneCalls (@'https://kustodetectiveagency.blob.core.windows.net/kda2c2phonecalls/log_00002.csv.gz')
+
+
+// find the person with the most calls disconnected by destination - that's the culprit
+// start from the numbers that initiated calls and then repeat self-joins to find their calls and the disconnection events
+let main = 
+PhoneCalls
+| project 
+    CallConnectionId
+    ,origin = tostring(Properties.Origin)
+    ,destination = tostring(Properties.Destination)
+    ,isHidden = tostring(Properties.IsHidden)
+    ,disconnectedBy = tostring(Properties.DisconnectedBy)
+;
+main
+| distinct origin
+| join kind=inner main on origin
+| join kind=inner main on CallConnectionId
+// single row per call
+| summarize 
+    origin = max(origin)
+    ,destination = max(destination)
+    ,disconnectedBy = max(disconnectedBy1)
+    by CallConnectionId
+// interested in calls disconnected by destination
+| where disconnectedBy == "Destination"
+// answer will be the one with most disconnections by the destination
+| summarize
+    c = count()
+    by origin
+| top 1 by c desc

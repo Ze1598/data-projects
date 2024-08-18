@@ -1,0 +1,166 @@
+.execute database script <|
+.create table KuandaLogs (Timestamp:datetime, DetectiveId:string, Message:string)
+.ingest async into table KuandaLogs (@'https://kustodetectiveagency.blob.core.windows.net/kda2c10adminlogs/log_00000.csv.gz')
+.ingest async into table KuandaLogs (@'https://kustodetectiveagency.blob.core.windows.net/kda2c10adminlogs/log_00001.csv.gz')
+.ingest into table KuandaLogs (@'https://kustodetectiveagency.blob.core.windows.net/kda2c10adminlogs/log_00002.csv.gz')
+
+
+// Credits for solution: https://medium.com/courisity-is-a-drug/walk-through-guide-for-kusto-detective-agency-season-2-case-10-solution-1d6d051c12cd
+
+KuandaLogs
+| parse Message with "Operation id=" AddOperationId " started ('" CaseStatus "'). Captured user encryption token: '" token "'."
+| parse Message with "Operation id=" RemoveOperationId " completed: user encryption token for this operation is disposed."
+//
+| order by Timestamp asc 
+| partition hint.strategy=native by DetectiveId
+(
+    order by Timestamp asc
+    | scan with_match_id=id  declare(OperationId2Token:dynamic) with (
+        step start:
+            Message has 'User entered the system' 
+            or Message has 'User session reset'
+            => OperationId2Token = dynamic({}) // Initialise the object of tokens
+        ;
+		step capture: 
+		  Message has 'Captured user encryption token' 
+          or Message has "completed" 
+          => OperationId2Token = iff(
+            Message has 'Captured user encryption token'
+            ,bag_merge(capture.OperationId2Token, bag_pack(AddOperationId, token)) // Add new token to object as scan_id: token
+            ,bag_remove_keys(capture.OperationId2Token, pack_array(RemoveOperationId)))  // Or remove if deleted
+        ;
+		step end:
+            Message has 'Sending' 
+            => OperationId2Token = capture.OperationId2Token
+		  ;
+    )
+   | order by id asc, Timestamp asc
+)
+// Concating the valid tokens
+// Convert object to string and extract only the tokens (ignore keys and punctuation)
+| extend TotalKey = strcat_array(extract_all(@':\"([a-z]*)\",?', tostring(OperationId2Token)), "")
+// Parsing the encrypted message
+| parse-where Message with "Sending an encrypted message, will use Dekrypt(@'" Encrypted "', strcat_array(<active-user-encryption-tokens>, '')) for decoding."
+| project DetectiveId, Key = TotalKey, Message = Encrypted
+// Invoking to dekrypt
+| invoke Dekrypt()
+| project-reorder Result
+| extend t = substring(Result, 31)
+
+//TODO [BUGBUG]: Validate: bitset_count_ones(hash_many('kvc178c8b4935bed382529', tostring($user_answer))) < 54! Leaving as-is for now, the chance it will actually happen is very low. (O boy, these non-AMD processors are literally melting down on invalid instruction sets!)
+
+//114203275
+range answer from 0 to 2147483647 step 1
+| where bitset_count_ones(hash_many('kvc5ssgkrbvnsv8e8k1uk1', tostring(answer))) > 54
+| project answer
+// Stop at first success
+| limit 1
+
+My attempt
+
+// 1 - User entered the system, start collecting user encryption tokens.
+// 2 - User session reset: all user encryption tokens are disposed.
+// 3 - Operation id=6c8b5d956173032b started ('CaseAssigned'). Captured user encryption token: 'gwqk'.
+// 4 - Operation id=22f80b7d2c1ce965 completed: user encryption token for this operation is disposed.
+// 5 - Sending an encrypted message, will use Dekrypt(@'', strcat_array(<active-user-encryption-tokens>, '')) for decoding.
+
+// CaseAssigned
+// CaseSolved
+// CaseUnsolved
+let _prep = 
+    KuandaLogs
+    // | where Message
+    // | parse-where Message with Role " periodic scan completed, " n:int " critical vulnerabilities were found."
+    | extend LogType = 
+        case(
+            Message == "User entered the system, start collecting user encryption tokens."
+            ,1
+            ,case(
+                Message == "User session reset: all user encryption tokens are disposed."
+                ,4
+                ,case(
+                    substring(Message, 0, 7) == "Sending"
+                    ,5
+                    ,case(
+                        Message endswith "user encryption token for this operation is disposed."
+                        ,3 // Operation ended
+                        ,2 // Operation started
+                    )
+                )
+            )
+        )
+    | parse Message with * "id=" OperationIdStart " started ('" OperationType "'). Captured user encryption token: '" Token "'." *
+    | parse Message with * "Operation id=" OperationIdEnd " completed: user encryption token for this operation is disposed." *
+    | parse Message with * "Sending an encrypted message, will use " SentText:string " for decoding." *
+    | extend OperationId = coalesce(OperationIdStart, OperationIdEnd)
+    | project Timestamp, DetectiveId, Message, LogType, OperationId, OperationType, Token, SentText
+;
+// Find tokens used by multiple users without reset inbetween
+let baseQuery =
+    _prep
+    // Get token for end of task
+    | join kind=leftouter (
+            _prep
+            | where isnotempty(Token)
+            | distinct OperationId, Token
+        )
+        on $left.OperationId == $right.OperationId
+    // And get task type for end as well
+    | join kind=leftouter (
+            _prep
+            | where isnotempty(Token)
+            | distinct OperationId, OperationType
+        )
+        on $left.OperationId == $right.OperationId
+    | extend TokenTemp = case(LogType == 4, "RESET", "")
+    | project Timestamp, DetectiveId, Message, LogType, OperationId, OperationType=OperationType1, Token=coalesce(Token1, TokenTemp), SentText
+;
+let resetDiffByDetective =
+    baseQuery
+    | where DetectiveId == "kvc7a7bfa868350e8ab69c" // 46
+    | partition hint.strategy=native by DetectiveId
+    (
+        partition hint.strategy=native by Token
+        (
+            order by Timestamp asc
+            | extend DetectiveResetDiff = Timestamp - prev(Timestamp)
+            | where Token == "RESET"
+        )
+    )
+;
+let tokenDurationByDetective = 
+    baseQuery
+    | where DetectiveId == "kvc7a7bfa868350e8ab69c" // 46
+    | partition hint.strategy=native by DetectiveId
+    (
+        partition hint.strategy=native by Token
+        (
+            order by Token, Timestamp asc
+            | where not(Token in ("RESET", ""))
+            | extend DetectiveResetDiff = Timestamp - prev(Timestamp)
+        )
+    )
+;
+let sharedTokens =
+    baseQuery
+    | where not(Token in ("RESET", ""))
+    | partition hint.strategy=native by Token
+    (
+        order by DetectiveId, Timestamp asc
+        | extend PrevDet = prev(DetectiveId)
+        | extend NextDet = next(DetectiveId)
+        | extend CurrDet = DetectiveId
+        | where CurrDet != PrevDet and PrevDet == NextDet
+    )
+;
+baseQuery
+| where DetectiveId == "kvc66a30f3e96ac851f254"
+// | partition hint.strategy=native by DetectiveId
+// (
+//     partition hint.strategy=native by Token
+//     (
+//         order by Token, Timestamp asc
+//         | where not(Token in ("RESET", ""))
+//         | extend DetectiveResetDiff = Timestamp - prev(Timestamp)
+//     )
+// )

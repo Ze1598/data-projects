@@ -1,0 +1,143 @@
+.execute database script <|    
+.create-or-alter function Dekrypt(T:(Message:string, Key:string)) { 
+    let lx=array_concat(range(48, 57, 1), range(65, 92, 1), range(97, 122, 1));
+    let uc = (_s:string) { unicode_codepoints_from_string(hash_sha256(_s))};
+    T 
+    | extend c1 = uc(tolower(Key)), c2 = uc(toupper(Key))
+    | mv-apply with_itemindex=i l=lx to typeof(int), c=c1 to typeof(int) on (order by c asc, i asc | summarize c1=unicode_codepoints_to_string(make_list(l)))
+    | mv-apply with_itemindex=i l=lx to typeof(int), c=c2 to typeof(int) on (order by c asc, i asc | summarize c2=unicode_codepoints_to_string(make_list(l)))
+    | extend Result = coalesce(base64_decode_tostring(translate(c1, c2, Message)), "Failure: wrong key")
+    | project-away c1, c2
+}
+.create-or-alter function SecretCodeToKey(T:(c1:long,c2:long,c3:long,c4:long))
+{
+    let magic_const = toscalar(T | summarize sum(c1)*sum(c2)/sum(c3)+sum(c4));
+    let key = toscalar(T
+    | summarize list = make_list(pack_array(c1, c2, c3, c4))
+    | project key=unicode_codepoints_to_string(series_add(list, magic_const)));
+    key
+}
+.create-merge table Runs (Timestamp:datetime, RunnerID:string, Distance:double, Duration:timespan, StartLat:double, StartLon:double)
+.ingest async into table Runs (@'https://kustodetectiveagency.blob.core.windows.net/kda2c8run/log_00000.csv.gz')
+.ingest into table Runs (@'https://kustodetectiveagency.blob.core.windows.net/kda2c8run/log_00001.csv.gz')
+
+
+// Secret Message intercepted    
+let city_code=datatable(c1:long,c2:long,c3:long,c4:long)
+[1, ?, ?,  4, 
+ ?, 7, 6,  ?,
+ 8, ?, 10, 5,
+ ?, 2, ?, 15];    
+print Key=SecretCodeToKey(city_code), Message=
+@'0SOHpSdTgidfqXFOYeIOjktOjXFcjktPjwzHgSABgsctZknJZKfEjBAygipOgS\\pBNEjknCVedTpSdyjk7EZKFHVSOa8i7E8SOCZedfgSOTgSA'
+@'tYPFaYB4TjXFHZ[\OVkNT17mzgSv\VPFHjknHjKFnVedygSvuVBvOYBxDgS4HgiztVkAyYyFujPFupwgEpiztjKFmVaIOVaImV[nHgS\\pBNEYB'
+@'d\Z[\OjXFb8SNEjk4yYyFujPFb8SNEKbIFqEbo7adbgSjOZwgEVBAbqXFc6KFDVeO\VXFCV[tyZkIOYyfEjBAygipOgiv5Zk2DgSnupXFeZwjOY'
+@'PFBYBAcgSAtYPFfZwI5gKFzjPF\VaOb8SOTjyfEp[NEY[\\VSfE8knbjknH8kjngSAtYPFOjBjuYaIHgidTpSODgiI5jKFqIssEZeztVkzDjwME'
+@'ZBdTjk4b8XFupwgEjBdOpXxvXJJEZ[4TVBAbgiv5ZwzOgiIuVyFcpkv5gS4bgiI58wMEpSOcjKfEZadbgizOYe7EZwvHpwzOjXfEp[NEZwzOgiz'
+@'tVBnmVBYEVedygXzHVkAQjKFbjwvbYygDgSzupSEEjBOapwz\pSO[jk2ngS4TjXF2pkObjKFD8wIOYB4DViJT17mN8Sdngiv5Zk2DgSdxYSAHjK'
+@'Fb8SNEKbIFzeMEp[d\8[nOYevOYyF\VB7E8SdyZk2JgSObYyFOYSOCgSIup[nBZk2DqEbo17mUVeYDgS2OpXFtYyF\jSIyjwvHgiI5jKFcZwIbj'
+@'wgEV[ZEVwJEp[dDVXtPjkOTjyxEKKFtVBIOYavbZknJgiI5Zw7EpS\OYBNE8wMEZKFaYBd\pXFJjk4DgSABgSvtYBOuY[Ob6KFyjkp\YBImVBYE'
+@'VwJEY[4BjwInqPrvXJ2OpXFcjKF\YevtYBNE6kAtqXFmpXFeZwMEZk2DgSsEVk4bpSdygSABgSOcYSdCZ[4PVSNEpSOc8knaqPFUVyFJVedPpXF'
+@'c6KFCV[nTjkvb8knagSjD8kp5pXFeZwMEZkxEjw\fjwzmjknCjKFujPF\gS2mjBdb8ktOg7bodSAugSz\jXFc6KFDpkpaZkpOgSj\8k2OjXFbVy'
+@'FlV[OTgStOgSATgiI58wMEpS\y8k2D8knagSmupwzTjwJ\g15m175vXJztpXFBjk4ygSnupXfEVwJEjazmjknJYyfEVSd\pBOTjyFb8SOTjeMEp'
+@'SREZ[\\VBvOgSOHgSnupXFc6KFHpiODjKxEKKF5ZwjOgS4HY[dcZB2OjXF\giIOZkbEV[ZEVSAnZkfEZBAJ6kptZwzJYyfvXap5VyFcVejOgipm'
+@'pSEEVkNEVSOQjKFOVidH8wjOgiF5ZknbV[tHqXFOVavtYBOTjyFc6KFmVajmVBvmZBOD8wInqPFFpXF\VaJEj[O[jkxEpSOcjKfEZw7EVSd\Ye7'
+@'EpipugSABgiI5jkbEjSOHZezOjwID67boY[\\jSAegStngSd[jwzngStupBNDgSd[jkxEjidy8knagStngSdx8SODZwz\pSOTjyFypknHgiI5YB'
+@'Atj[EEpS\OgSvmpiJTg4Iypk2nqXFzgSjOjkfEpknbVedC8S4PVSNTgs4TjXFDjw7EVkNEpSdDVXFnVeND17mb8SOHgSvmpiJE8wMEZKF58kIJj'
+@'kxEj[dcgKFzpXFujBjOYaMEZkxEZkztVBI\VBvOgSABgSt\YajOVSAtYyFHYSAbYyFe8SdyjKFuVBNEZ[4TgSOTjidDj[NE8kxEZKFyjkjyjwv5'
+@'8knagiv5ZkcOgS4BpSdy17mCV[n2pkdy8knagSsEZazOZwI5pS4Q8knag1sfKyFypkxTgsObgSOHgSsEYSdyjBdCpXFPVSdTjXFujPFc8wvC8SO'
+@'OjPF\VB7EYBdlpwjOVB4b8kATqXF\gSIOVSOa8iIBpkfEZ[ATZ[ACpSOuVPFb8S4bgSjtjk2HgStngivbYBdTjeI5qEbo17m0VyfEVwJEjBdDVS'
+@'AegizujedOYyfEVSdbgidHgScOjwrEVedygSdnjwMEjBOxjk7EV[xEpS\OgiI\YBpOpXxEKKFe8k2DgizOpBd\VXFcVezOgSIOpS4mViMEZkzup'
+@'w7EVedygiFDZknHgSOTgSItjKFb8ktOqPrvXOFyjwF\YBNE6kAtYavOVijOYyFbVyFe8wITjwvHgiI5jKFHYSdCpS4Cpk2\YPFJVepTjB4DVXFu'
+@'jPFb8SNEKbIFqXF\YyFejKFyjk2OVaIDjwvHViJEjizmVSfE8knbVyFmpiMEZ[AyjKF\pXFBpk2DgivfjkdJg7bogrboKeznYiIu'
+| invoke Dekrypt()
+| project Result
+
+
+// Helper function to obtain link for Google Maps view
+let VirtualTourLink = (lat:real, lon:real) {
+    print Link = strcat('https://www.google.com/maps/@', lat, ',', lon, 
+        ',3a,75y,252.01h,89.45t/data=!3m6!1e1!3m4!1s-1P!2e0!7i16384!8i8192')
+};
+VirtualTourLink(41.4036, 2.1744)
+
+
+
+// Filter dataset for run distances in the expected range
+// Keep only runners that run 3-4 times per week
+// Assume Krypto has 8 runs
+// Visit the 8 lat long locations on Google Maps and extract visible numbers for the code
+// The order for the numbers to go into the code will be order by the timestamp of the run
+
+
+// Credits for solution: https://medium.com/courisity-is-a-drug/walk-through-guide-for-kusto-detective-agency-season-2-case-8-solution-3338cccf6578
+let city_code=datatable(c1:long,c2:long,c3:long,c4:long)
+[1, 14, 14,  4, 
+ 11, 7, 6,  9,
+ 8, 10, 10, 5,
+ 13, 2, 3, 15];      
+print Key=SecretCodeToKey(city_code), Message=
+@'0SOHpSdTgidfqXFOYeIOjktOjXFcjktPjwzHgSABgsctZknJZKfEjBAygipOgS\\pBNEjknCVedTpSdyjk7EZKFHVSOa8i7E8SOCZedfgSOTgSA'
+@'tYPFaYB4TjXFHZ[\OVkNT17mzgSv\VPFHjknHjKFnVedygSvuVBvOYBxDgS4HgiztVkAyYyFujPFupwgEpiztjKFmVaIOVaImV[nHgS\\pBNEYB'
+@'d\Z[\OjXFb8SNEjk4yYyFujPFb8SNEKbIFqEbo7adbgSjOZwgEVBAbqXFc6KFDVeO\VXFCV[tyZkIOYyfEjBAygipOgiv5Zk2DgSnupXFeZwjOY'
+@'PFBYBAcgSAtYPFfZwI5gKFzjPF\VaOb8SOTjyfEp[NEY[\\VSfE8knbjknH8kjngSAtYPFOjBjuYaIHgidTpSODgiI5jKFqIssEZeztVkzDjwME'
+@'ZBdTjk4b8XFupwgEjBdOpXxvXJJEZ[4TVBAbgiv5ZwzOgiIuVyFcpkv5gS4bgiI58wMEpSOcjKfEZadbgizOYe7EZwvHpwzOjXfEp[NEZwzOgiz'
+@'tVBnmVBYEVedygXzHVkAQjKFbjwvbYygDgSzupSEEjBOapwz\pSO[jk2ngS4TjXF2pkObjKFD8wIOYB4DViJT17mN8Sdngiv5Zk2DgSdxYSAHjK'
+@'Fb8SNEKbIFzeMEp[d\8[nOYevOYyF\VB7E8SdyZk2JgSObYyFOYSOCgSIup[nBZk2DqEbo17mUVeYDgS2OpXFtYyF\jSIyjwvHgiI5jKFcZwIbj'
+@'wgEV[ZEVwJEp[dDVXtPjkOTjyxEKKFtVBIOYavbZknJgiI5Zw7EpS\OYBNE8wMEZKFaYBd\pXFJjk4DgSABgSvtYBOuY[Ob6KFyjkp\YBImVBYE'
+@'VwJEY[4BjwInqPrvXJ2OpXFcjKF\YevtYBNE6kAtqXFmpXFeZwMEZk2DgSsEVk4bpSdygSABgSOcYSdCZ[4PVSNEpSOc8knaqPFUVyFJVedPpXF'
+@'c6KFCV[nTjkvb8knagSjD8kp5pXFeZwMEZkxEjw\fjwzmjknCjKFujPF\gS2mjBdb8ktOg7bodSAugSz\jXFc6KFDpkpaZkpOgSj\8k2OjXFbVy'
+@'FlV[OTgStOgSATgiI58wMEpS\y8k2D8knagSmupwzTjwJ\g15m175vXJztpXFBjk4ygSnupXfEVwJEjazmjknJYyfEVSd\pBOTjyFb8SOTjeMEp'
+@'SREZ[\\VBvOgSOHgSnupXFc6KFHpiODjKxEKKF5ZwjOgS4HY[dcZB2OjXF\giIOZkbEV[ZEVSAnZkfEZBAJ6kptZwzJYyfvXap5VyFcVejOgipm'
+@'pSEEVkNEVSOQjKFOVidH8wjOgiF5ZknbV[tHqXFOVavtYBOTjyFc6KFmVajmVBvmZBOD8wInqPFFpXF\VaJEj[O[jkxEpSOcjKfEZw7EVSd\Ye7'
+@'EpipugSABgiI5jkbEjSOHZezOjwID67boY[\\jSAegStngSd[jwzngStupBNDgSd[jkxEjidy8knagStngSdx8SODZwz\pSOTjyFypknHgiI5YB'
+@'Atj[EEpS\OgSvmpiJTg4Iypk2nqXFzgSjOjkfEpknbVedC8S4PVSNTgs4TjXFDjw7EVkNEpSdDVXFnVeND17mb8SOHgSvmpiJE8wMEZKF58kIJj'
+@'kxEj[dcgKFzpXFujBjOYaMEZkxEZkztVBI\VBvOgSABgSt\YajOVSAtYyFHYSAbYyFe8SdyjKFuVBNEZ[4TgSOTjidDj[NE8kxEZKFyjkjyjwv5'
+@'8knagiv5ZkcOgS4BpSdy17mCV[n2pkdy8knagSsEZazOZwI5pS4Q8knag1sfKyFypkxTgsObgSOHgSsEYSdyjBdCpXFPVSdTjXFujPFc8wvC8SO'
+@'OjPF\VB7EYBdlpwjOVB4b8kATqXF\gSIOVSOa8iIBpkfEZ[ATZ[ACpSOuVPFb8S4bgSjtjk2HgStngivbYBdTjeI5qEbo17m0VyfEVwJEjBdDVS'
+@'AegizujedOYyfEVSdbgidHgScOjwrEVedygSdnjwMEjBOxjk7EV[xEpS\OgiI\YBpOpXxEKKFe8k2DgizOpBd\VXFcVezOgSIOpS4mViMEZkzup'
+@'w7EVedygiFDZknHgSOTgSItjKFb8ktOqPrvXOFyjwF\YBNE6kAtYavOVijOYyFbVyFe8wITjwvHgiI5jKFHYSdCpS4Cpk2\YPFJVepTjB4DVXFu'
+@'jPFb8SNEKbIFqXF\YyFejKFyjk2OVaIDjwvHViJEjizmVSfE8knbVyFmpiMEZ[AyjKF\pXFBpk2DgivfjkdJg7bogrboKeznYiIu'
+| invoke Dekrypt()
+| project Result
+
+
+// Lat: 41.3846745482911
+// Lon: 2.18335113088872
+
+let RunnersCountsInRange = 
+Runs
+| summarize RunsCount = count() by week_of_year(Timestamp), RunnerID
+// Runs 3-4 times a week, allowing one miss for bodyguards (they are a team, assuming they are having shifts and not as die-hard runners as Krypo)
+| where RunsCount between (2 .. 4)
+| distinct RunnerID
+;
+let PotentialRunners = 
+Runs
+| join kind=inner RunnersCountsInRange on RunnerID
+| summarize DistancesList = make_list(Distance) by RunnerID
+| extend DistancesStats = series_stats_dynamic(DistancesList)
+| extend MinDistance = toreal(DistancesStats['min'])
+// Runs between 8-12 km
+| where MinDistance between (8 .. 12)
+| extend MaxDistance = toreal(DistancesStats['max'])
+// Ran once 10 km at least
+| where MaxDistance between (10 .. 12)
+| distinct RunnerID
+;
+let VirtualTourLink = (lat:real, lon:real) {
+    strcat('https://www.google.com/maps/@', lat, ',', lon, 
+        ',3a,75y,252.01h,89.45t/data=!3m6!1e1!3m4!1s-1P!2e0!7i16384!8i8192')
+};
+//
+let SuspiciousPlaces = 
+Runs
+| where RunnerID in (PotentialRunners)
+| extend s2_23=geo_point_to_s2cell(StartLon, StartLat, s2_precision = 23)
+| extend SuspiciousPlaceVirtualTourLink = VirtualTourLink(StartLat, StartLon)
+// Same position
+| summarize take_any(SuspiciousPlaceVirtualTourLink), RunnersCount=dcount(RunnerID), StartLon=take_any(StartLon), StartLat=take_any(StartLat) by s2_23
+// Krypto has 2 bodyguards, so total of 3 people
+| where RunnersCount == 3
+;
+SuspiciousPlaces

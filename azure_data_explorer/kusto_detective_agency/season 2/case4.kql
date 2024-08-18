@@ -1,0 +1,133 @@
+.execute database script <|
+.create-merge table IpInfo (IpCidr:string, Info:string)
+//clear any previously ingested data if such exists
+.clear table IpInfo data
+.ingest into table IpInfo (@'https://kustodetectiveagency.blob.core.windows.net/kda2c4network/ip-lookup.csv.gz')
+.create-merge table NetworkMetrics (Timestamp:datetime, ClientIP:string, TargetIP:string, BytesSent:long, BytesReceived:long, NewConnections:int)
+.clear table NetworkMetrics data
+.ingest async into table NetworkMetrics (@'https://kustodetectiveagency.blob.core.windows.net/kda2c4network/log_00000.csv.gz')
+.ingest async into table NetworkMetrics (@'https://kustodetectiveagency.blob.core.windows.net/kda2c4network/log_00001.csv.gz')
+// Last command is running sync, so when it finishes the data is already ingested.
+// It can take about 1.5min to run.
+.ingest into table NetworkMetrics (@'https://kustodetectiveagency.blob.core.windows.net/kda2c4network/log_00002.csv.gz')
+
+
+// Compare counts with avg bytes received and avg bytes sent per day
+NetworkMetrics
+| make-series c = count(), rec = avg(BytesReceived), sent = avg(BytesSent) on Timestamp step 1d
+| render timechart with (ysplit=panels)
+
+// Total number of requests per company
+NetworkMetrics
+| evaluate ipv4_lookup(IpInfo, ClientIP, IpCidr)
+| summarize c = count() by Info
+
+
+// Number of days each company sent requests
+NetworkMetrics
+// | where BytesReceived > BytesSent
+| extend day = format_datetime(Timestamp, 'yyyy-MM-dd')
+| evaluate ipv4_lookup(IpInfo, ClientIP, IpCidr)
+| summarize count_distinct(day) by Info
+
+
+// Find companies with at least 1 anomaly in their daily bytes received
+NetworkMetrics
+| evaluate ipv4_lookup(IpInfo, ClientIP, IpCidr)
+// | extend dt = todatetime(strcat(format_datetime(Timestamp, 'yyyy-MM-dd'), 'T00:00:00Z'))
+| make-series avg_bytes_received = avg(BytesReceived) on Timestamp step 1d by Info
+| extend (anomalies, score, baseline) = series_decompose_anomalies(avg_bytes_received, 1.5, -1, 'linefit')
+| extend num_anomalies = array_sum(anomalies)
+| where num_anomalies > 0
+
+// Get number of requests and distinct IPs for companies that had any request with more than 3 new connections
+let relevant = 
+NetworkMetrics
+| where NewConnections > 3
+| evaluate ipv4_lookup(IpInfo, ClientIP, IpCidr)
+| distinct Info
+;
+NetworkMetrics
+| evaluate ipv4_lookup(IpInfo, ClientIP, IpCidr)
+| join kind=inner relevant on Info
+| summarize c = count(), num_ips = count_distinct(ClientIP) by Info
+
+// Find companies with at least 1 anomaly
+let relevant_info =
+IpInfo
+| where 
+    not(tolower(Info) matches regex "company") 
+    and not(tolower(Info) matches regex "ltd")
+    and not(tolower(Info) matches regex "ltda")
+    and not(tolower(Info) matches regex "telecom")
+    and not(tolower(Info) matches regex "telecom")
+    and not(tolower(Info) matches regex "limited")
+    and not(tolower(Info) matches regex "corp")
+    and not(tolower(Info) matches regex "university")
+    and not(tolower(Info) matches regex "akamai")
+    and not(tolower(Info) matches regex "partner")
+    and not(Info in ('COGENT-174'))
+;
+NetworkMetrics
+| evaluate ipv4_lookup(relevant_info, ClientIP, IpCidr)
+// | extend dt = todatetime(strcat(format_datetime(Timestamp, 'yyyy-MM-dd'), 'T00:00:00Z'))
+| make-series avg_bytes_received = avg(BytesReceived) on Timestamp step 1d by Info
+| extend (anomalies, score, baseline) = series_decompose_anomalies(avg_bytes_received, 1.5, -1, 'linefit')
+| extend num_anomalies = array_sum(anomalies)
+| where num_anomalies > 0
+| top 10 by num_anomalies desc
+// | render anomalychart with(anomalycolumns=anomalies)
+
+
+// Track bytes received statistics per company by filtering out those for corporations
+let relevant =
+IpInfo
+| where 
+    not(tolower(Info) matches regex "company") 
+    and not(tolower(Info) matches regex "ltd")
+    and not(tolower(Info) matches regex "ltda")
+    and not(tolower(Info) matches regex "telecom")
+    and not(tolower(Info) matches regex "telecom")
+    and not(tolower(Info) matches regex "limited")
+    and not(tolower(Info) matches regex "corp")
+    and not(tolower(Info) matches regex "university")
+    and not(tolower(Info) matches regex "akamai")
+    and not(tolower(Info) matches regex "partner")
+    and not(Info in ('COGENT-174'))
+;
+NetworkMetrics
+| evaluate ipv4_lookup(relevant, ClientIP, IpCidr)
+| extend dt = todatetime(strcat(format_datetime(Timestamp, 'yyyy-MM-dd'), 'T00:00:00Z'))
+| summarize 
+    _min = min(BytesReceived)
+    , _max = max(BytesReceived)
+    , _avg = avg(BytesReceived) 
+    , rec_count = count()
+    , count_dates = count_distinct(dt)
+    , count_ip = count_distinct(ClientIP)
+    by Info
+
+
+
+// Result is the company with the lowest minimum and maximum bytes received, and also lowest bytes received amplitude: KUANDA.ORG
+// Surprisingly, they have made requests on 23 of the 30 days available
+NetworkMetrics
+| evaluate ipv4_lookup(IpInfo, ClientIP, IpCidr)
+| extend dt = todatetime(strcat(format_datetime(Timestamp, 'yyyy-MM-dd'), 'T00:00:00Z'))
+| summarize 
+    _min = min(BytesReceived)
+    , _max = max(BytesReceived)
+	, amplitude = max(BytesReceived) - min(BytesReceived)
+    , _avg = avg(BytesReceived) 
+    , rec_count = count()
+    , count_dates = count_distinct(dt)
+    , count_ip = count_distinct(ClientIP)
+    by Info
+
+
+// Post-analyses
+NetworkMetrics
+| evaluate ipv4_lookup(IpInfo, ClientIP, IpCidr)
+| where Info == 'KUANDA.ORG'
+| summarize count(), min(BytesReceived), max(BytesReceived), avg(BytesReceived) by bin(Timestamp, 1d)
+| render timechart

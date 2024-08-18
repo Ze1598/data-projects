@@ -1,0 +1,115 @@
+﻿// Task 1: Basic KQL queries - explore the data
+LogisticsTelemetry
+| where deviceId startswith "x"
+| take 10
+
+LogisticsTelemetry
+| where enqueuedTime > ago(2m)
+| take 10 
+
+LogisticsTelemetry
+| summarize count()
+
+LogisticsTelemetry
+| where enqueuedTime > ago(10m)
+| summarize count()
+
+LogisticsTelemetry
+| where deviceId startswith "x"
+| summarize count()
+
+LogisticsTelemetry
+| where deviceId startswith "x"
+| summarize count() by deviceId
+
+LogisticsTelemetry
+| where deviceId startswith "x"
+| summarize count() by deviceId
+| render piechart 
+
+LogisticsTelemetry
+// | where enqueuedTime > ago(10d) 
+| extend h = telemetry.Humidity
+| summarize avg(toint(h)) by bin(enqueuedTime, 1h)
+| render timechart 
+
+
+// Task 2: Explore the table and columns
+LogisticsTelemetry
+| evaluate bag_unpack(enrichments)
+| evaluate bag_unpack(messageProperties)
+| evaluate bag_unpack(telemetry)
+| evaluate bag_unpack(Location)
+| getschema
+
+
+// Task 3: Keep the columns of your interest
+LogisticsTelemetry
+| project deviceId, enqueuedTime, Temp = telemetry.Temp
+| take 10
+
+
+// Task 4: Filter the output
+LogisticsTelemetry
+| project deviceId, enqueuedTime, Temp = telemetry.Temp
+| where enqueuedTime >= ago(90d)
+| take 10
+
+
+// Task 5: Sorting the results
+LogisticsTelemetry
+| evaluate bag_unpack(enrichments)
+| evaluate bag_unpack(messageProperties)
+| evaluate bag_unpack(telemetry)
+| evaluate bag_unpack(Location)
+| top 5 by Temp desc
+
+LogisticsTelemetry
+| evaluate bag_unpack(enrichments)
+| evaluate bag_unpack(messageProperties)
+| evaluate bag_unpack(telemetry)
+| evaluate bag_unpack(Location)
+| top 5 by Temp asc
+
+
+// Task 6: Reorder, rename, add columns
+LogisticsTelemetry
+| extend  C_Temp = (telemetry.Temp - 32) * (5.0/9.0)
+| extend F_Temp = telemetry.Temp
+| project-reorder C_Temp, F_Temp, *
+| where enqueuedTime >= ago(7d)
+| take 5
+
+
+// Task 7: Total number of records
+LogisticsTelemetry
+| summarize count()
+
+
+// Task 8: Aggregations and string operations
+LogisticsTelemetry
+| where deviceId startswith "x"
+
+LogisticsTelemetry
+| where deviceId startswith "x"
+| summarize count_ = count() by deviceId
+
+
+// Task 9: Render a chart
+LogisticsTelemetry
+| where deviceId startswith "x"
+| summarize count_ = count() by deviceId
+| render piechart 
+
+
+// Task 10: Create bins and visualize time series
+LogisticsTelemetry
+| summarize count() by bin(enqueuedTime, 10m)
+| render timechart 
+
+
+// Task 11: Aggregations with time series visualizations
+LogisticsTelemetry
+| extend Temp = telemetry.Temp * 1
+| summarize avg(Temp) by bin(enqueuedTime, 30m)
+| render timechart 

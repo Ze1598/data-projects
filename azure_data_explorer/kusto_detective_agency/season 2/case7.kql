@@ -1,0 +1,76 @@
+.execute database script <|
+.create-merge table Flights(Timestamp:datetime, callsign:string, lat:real, lon:real, velocity:real, heading:real, vertrate:real, onground:bool, geoaltitude:real) 
+.create-merge table Airports (Id:string, Ident:string, Type:string, Name:string, lat:real, lon:real, elevation_ft:long, iso_country:string, iso_region:string, municipality:string, gps_code:string, local_code:string)  
+.ingest into table Airports (@'https://kustodetectiveagency.blob.core.windows.net/kda2c7flights/airports.csv.gz')
+.ingest async into table Flights (@'https://kustodetectiveagency.blob.core.windows.net/kda2c7flights/flights_1.csv.gz')
+.ingest async into table Flights (@'https://kustodetectiveagency.blob.core.windows.net/kda2c7flights/flights_2.csv.gz')
+.ingest into table Flights (@'https://kustodetectiveagency.blob.core.windows.net/kda2c7flights/flights_3.csv.gz')
+
+
+
+
+// Find planes onground in airport sighted
+// Follow route of planes identified
+// Join to other planes that were in a 1km radius at the same time with the original planes
+// Filter for those that have been at a lower altitude than the original planes
+// Follow the route of the new planes
+
+
+// S2 precision for calculating airports-plane proximity (~1km)
+let s2_precision_airport = 13;
+// S2 precision for calculating plane-plane proximity (~10km)
+let s2_precision_planes = 10; // about 1km
+// Look for planes on the ground at the window of sight of Krypto
+let flightsFromDoha = 
+    Flights
+    | where Timestamp >=  datetime("2023-08-11T03:30:00Z")
+        and Timestamp <= datetime("2023-08-11T05:30:00Z")
+        and onground
+    | extend key = geo_point_to_s2cell(lon, lat, s2_precision_airport)
+    | join kind=inner (
+        Airports
+        | where municipality == "Doha"
+        | extend key = geo_point_to_s2cell(lon, lat, s2_precision_airport)
+    ) on key
+    // Ensure the planes are on 1km radius from the airport to exclude false positives
+    // | where geo_distance_2points(lon, lat, lon1, lat1) < 1000
+    | distinct callsign
+;
+// Find pairs of planes that were in a 10km radius at the same time
+let closePlanes =
+    Flights
+    | where callsign in (flightsFromDoha)
+    | extend key = geo_point_to_s2cell(lon, lat, s2_precision_planes)
+    | join kind=inner (
+        Flights
+        | extend key = geo_point_to_s2cell(lon, lat, s2_precision_planes)
+    ) on key and Timestamp
+    // Remove where the plane joined to itself
+    // And keep only original planes higher than the destination planes
+    | where callsign != callsign1
+        and geoaltitude > geoaltitude1
+;
+// To which plane Krypto jumped to (the pair that were close the longest)
+let newPlane = 
+    closePlanes
+    | summarize 
+        maxTimestamp = max(Timestamp)
+        , minTimestamp = min(Timestamp) 
+        by callsign, callsign1
+    | extend durationTogether = maxTimestamp - minTimestamp
+    | top 1 by durationTogether desc 
+    | project callsign1
+;
+// And finally find where the plane landed
+Flights
+| where callsign == toscalar(newPlane)
+    and onground
+| extend key = geo_point_to_s2cell(lon, lat, 13)
+| join kind=inner (
+    Airports
+    | extend key = geo_point_to_s2cell(lon, lat, 13)
+) on key
+| project Ident, Name, municipality
+
+
+// Answer: Barcelona

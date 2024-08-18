@@ -1,0 +1,147 @@
+.execute database script <|
+.create-merge table MachineLogs (Timestamp:datetime, Machine:string, EventType:string, Message:string)
+.ingest async into table MachineLogs (@'https://kustodetectiveagency.blob.core.windows.net/kda2c9kda/log_00000.csv.gz')
+.ingest async into table MachineLogs (@'https://kustodetectiveagency.blob.core.windows.net/kda2c9kda/log_00001.csv.gz')
+.ingest into table MachineLogs (@'https://kustodetectiveagency.blob.core.windows.net/kda2c9kda/log_00002.csv.gz')
+
+// Credits for solution: https://medium.com/courisity-is-a-drug/walk-through-guide-for-kusto-detective-agency-season-2-case-9-solution-279b2aa9b2f5
+let VulnerableMachines = materialize(
+MachineLogs
+| parse-where Message with Role " periodic scan completed, " n:int " critical vulnerabilities were found."
+| extend IsVulnerable = n > 0
+| where IsVulnerable
+| summarize Role=take_any(Role), FirstVulnerable=min(Timestamp) by Machine
+| project CurrentMachine=Machine, Role, FirstVulnerable);
+//
+let Initials =
+MachineLogs
+| where EventType == "IncomingRequest"
+| parse-where Message with "Got request with TaskID=" CurrentTaskID " from " PreviousMachine
+| extend CurrentMachine=Machine
+// Taking only vulnerable machines, and enriching with current machine role
+| join kind=inner VulnerableMachines on CurrentMachine
+| project Timestamp, CurrentMachine, PreviousMachine, CurrentTaskID, Role;
+//
+let Hopes =
+MachineLogs
+| where EventType == "SpawnTask"
+| extend CurrentMachine=Machine
+// Taking only vulnerable machines
+| where CurrentMachine in ((VulnerableMachines | project CurrentMachine))
+| parse-where Message with "TaskID=" CurrentTaskID ": spawning a sub-task with TaskID=" NextTaskID " on " NextMachine;
+Hopes
+// Making graph based on tasks ids, and leveraging the initial node details
+| make-graph CurrentTaskID --> NextTaskID with Initials on CurrentTaskID
+| graph-match (start)-[relation*1..100]->(end)
+    where start.Role == "Gateway" and end.Role == "Admin"
+    project StartMachine=start.CurrentMachine, EndMachine=end.CurrentMachine, MachinesPath=relation.CurrentMachine
+
+
+
+
+My attempt below:
+
+// Extract relevant parameters from text messages 
+// Split resulting table into multiple: 
+//      1 - timestamp of event per machine (fact of event logging)
+//      2 - number of vulnerabilities by machine (machine + sum of vulnerabilities)
+//      3 - incoming request (timestamp + task id + source machine + target machine)
+//      4 - spawn task (timestamp + parent_task_id + child_task_id + parent machine + child machine)
+//      potentially merge 3 and 4
+// Plot the graph
+// Read "train me for this case" and potentially tips
+
+// Create columns based on event type:
+// PeriodicScan: machine_type, num_vulnerabilities
+// SpawnTask: task_id, child_task_id, child_machine_id
+// IncomingRequest: task_id, source
+let baseQuery =
+    MachineLogs
+    | extend 
+        // PeriodicScan columns
+        num_vulnerabilities = case(
+            EventType == "PeriodicScan"
+            ,extract("\\d", 0, Message, typeof(long))
+            ,long(null)
+        )
+        ,machine_type = case(
+            EventType == "PeriodicScan"
+            ,tostring(split(Message, " ")[0])
+            ,''
+        )
+        // SpawnTask columns
+        ,task_id = case(
+            EventType == "SpawnTask"
+            ,replace_string(tostring(split(Message, " spawning")[0]), "TaskID=", "")
+            ,''
+        )
+        ,child_task_id = case(
+            EventType == "SpawnTask"
+            ,tostring(split(split(Message, "sub-task with TaskID=")[1], " on")[0])
+            ,''
+        )
+        ,machine_id = case(
+            EventType == "SpawnTask"
+            ,tostring(split(Message, "on ")[1])
+            ,''
+        )
+        // IncomingRequest columns
+        ,request_task_id = case(
+            EventType == "IncomingRequest"
+            ,tostring(split(split(Message, "TaskID=")[1], " from")[0])
+            ,''
+        )
+        ,request_source = case(
+            EventType == "IncomingRequest"
+            ,tostring(split(Message, "from ")[1])
+            ,''
+        )
+    // | take 1000
+;
+// Pair parent-child for machines and tasks
+let taskList = 
+    baseQuery
+    | where EventType == "SpawnTask"
+    // timestamp + parent_task_id + child_task_id + parent machine + child machine
+    | project 
+        Timestamp
+        , ParentMachine = machine_id
+        , ChildMachine = Machine 
+        , ParentTaskId = task_id
+        , ChildTaskId = child_task_id
+;
+// Get machines that had vulnerabilities at any point
+let vulnerableMachines = 
+    baseQuery
+    | where EventType == "PeriodicScan" and num_vulnerabilities > 0
+    | distinct Machine
+;
+taskList
+// Keep only machines with vulnerabilities
+| join kind=inner vulnerableMachines on $left.ParentMachine == $right.Machine
+| join kind=inner vulnerableMachines on $left.ChildMachine == $right.Machine
+| make-graph ParentMachine --> ChildMachine with baseQuery on Machine
+| graph-match (start)-[relation*1..100]-(end)
+    // where relation.ChildMachine has_any("MNX-71B4CC") or relation.ParentMachine has_any("MNX-71B4CC")
+    // where start.machine_type == "Admin"
+    project relation.ParentMachine, relation.ChildMachine
+// Explode the parents
+| mv-expand kind=array  relation_ParentMachine
+// And now assign a number to each machine lineage (i.e. each record)
+| serialize 
+| extend LineageNumber = row_number()
+// How many nodes in the child array
+| extend NumChild = array_length(relation_ChildMachine)
+// Explode the child array
+| mv-expand kind=array relation_ChildMachine
+// Castings for operations downstream
+| extend relation_ParentMachine = tostring(relation_ParentMachine), relation_ChildMachine = tostring(relation_ChildMachine)
+// Once again ensure the child all had vulnerabilities
+| join kind=leftouter (
+        baseQuery
+        | where EventType == "PeriodicScan" and num_vulnerabilities > 0
+        | summarize TotalVulnerabilities = sum(num_vulnerabilities) by Machine = machine_id
+)on $left.relation_ChildMachine == $right.Machine
+// Anw now leave only lineages where all machines involved had vulnerabilities
+| summarize NumNodes = count(), TotalNodesVulnerabilities = sum(TotalVulnerabilities) by relation_ParentMachine, LineageNumber, NumChild
+| where LineageNumber == NumNodes

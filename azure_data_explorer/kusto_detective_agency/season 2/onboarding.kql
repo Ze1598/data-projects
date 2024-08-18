@@ -1,0 +1,28 @@
+.execute database script <|
+// Create a table for the telemetry data:
+.create table DetectiveCases(Timestamp:datetime, EventType:string, DetectiveId:string, CaseId: string, Properties:dynamic)
+//clear any previously ingested data if such exists
+.clear table DetectiveCases data
+// Load the data:
+.ingest async into table DetectiveCases (@'https://kustodetectiveagency.blob.core.windows.net/kda2start/log_00000.csv.gz')
+.ingest async into table DetectiveCases (@'https://kustodetectiveagency.blob.core.windows.net/kda2start/log_00001.csv.gz')
+.ingest into table DetectiveCases (@'https://kustodetectiveagency.blob.core.windows.net/kda2start/log_00002.csv.gz')
+
+// Award bounty to first solver
+let caseSolver = 
+DetectiveCases
+| where EventType == "CaseSolved"
+| summarize arg_min(Timestamp, *) by CaseId
+| project CaseId, DetectiveId
+;
+// Get bounty per case
+let caseBounty =
+DetectiveCases
+| where EventType == "CaseOpened"
+| project CaseId, DetectiveId, Bounty = toreal(Properties.Bounty)
+| distinct CaseId, Bounty
+;
+caseSolver
+| join kind=inner caseBounty on CaseId
+| summarize Earnings = sum(Bounty) by DetectiveId
+| top 1 by Earnings desc

@@ -1,0 +1,590 @@
+.execute database script <|
+// The data was obtained from the repository of the National Gallery of Art:
+// https://github.com/NationalGalleryOfArt/opendata
+.create-merge table NationalGalleryArt (ObjectId:long, Title:string, BeginYear:long, EndYear:long, Medium:string, Inscription:string, Attribution:string, AssistiveText:string, ProvenanceText:string, Creditline:string, Classification:string, ImageUrl:string)  
+//clear any previously ingested data if such exists
+.clear table NationalGalleryArt data
+.ingest into table NationalGalleryArt ('https://kustodetectiveagency.blob.core.windows.net/kda2c6art/artview.csv')
+
+
+let word1 = NationalGalleryArt
+| where ObjectId == 12204
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[497], wordOrder = 1 
+;
+let word2 = NationalGalleryArt
+| where ObjectId == 62295
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[24], wordOrder = 2 
+;
+let word3 = NationalGalleryArt
+| where ObjectId == 50883
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[678], wordOrder = 3 
+;
+let word4 = NationalGalleryArt
+| where ObjectId == 47108
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[107], wordOrder = 4 
+;
+let word5 = NationalGalleryArt
+| where ObjectId == 193867
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[3], wordOrder = 5 
+;
+let word6 = NationalGalleryArt
+| where ObjectId == 45534
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[141], wordOrder = 6 
+;
+let word7= NationalGalleryArt
+| where ObjectId == 100922
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[183], wordOrder = 7
+;
+let word8= NationalGalleryArt
+| where ObjectId == 143461
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[1], wordOrder = 8
+;
+let word9= NationalGalleryArt
+| where ObjectId == 1181
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[505], wordOrder = 9
+;
+let word10= NationalGalleryArt
+| where ObjectId == 46187
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[380], wordOrder = 10
+;
+let word11= NationalGalleryArt
+| where ObjectId == 41526
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[155], wordOrder = 11
+;
+let word12= NationalGalleryArt
+| where ObjectId == 66447
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[199], wordOrder = 12
+;
+let word13= NationalGalleryArt
+| where ObjectId == 30241
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[114], wordOrder = 13
+;
+let word14= NationalGalleryArt
+| where ObjectId == 33745
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[154], wordOrder = 14
+;
+let word15= NationalGalleryArt
+| where ObjectId == 12145
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[387], wordOrder = 15
+;
+let word16= NationalGalleryArt
+| where ObjectId == 46437
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[398], wordOrder = 16
+;
+let word17= NationalGalleryArt
+| where ObjectId == 177191
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[131], wordOrder = 17
+;
+let word18= NationalGalleryArt
+| where ObjectId == 293
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[64], wordOrder = 18
+;
+let word19= NationalGalleryArt
+| where ObjectId == 41629
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[1506], wordOrder = 19
+;
+let word20= NationalGalleryArt
+| where ObjectId == 210038
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[432], wordOrder = 20
+;
+let word21= NationalGalleryArt
+| where ObjectId == 41612
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[803], wordOrder = 21
+;
+let word22= NationalGalleryArt
+| where ObjectId == 216839
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[1], wordOrder = 22
+;
+let word23= NationalGalleryArt
+| where ObjectId == 404
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[258], wordOrder = 23
+;
+let word24= NationalGalleryArt
+| where ObjectId == 40
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[186], wordOrder = 24
+;
+let word25= NationalGalleryArt
+| where ObjectId == 1472
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[222], wordOrder = 25
+;
+let word26= NationalGalleryArt
+| where ObjectId == 122894
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[2], wordOrder = 26
+;
+let word27= NationalGalleryArt
+| where ObjectId == 46081
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[105], wordOrder = 27
+;
+let word28= NationalGalleryArt
+| where ObjectId == 41594
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[650], wordOrder = 28
+;
+let word29= NationalGalleryArt
+| where ObjectId == 32579
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[439], wordOrder = 29
+;
+let word30= NationalGalleryArt
+| where ObjectId == 44625
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[141], wordOrder = 30
+;
+let word31= NationalGalleryArt
+| where ObjectId == 184121
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[19], wordOrder = 31
+;
+let word32= NationalGalleryArt
+| where ObjectId == 33254
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[348], wordOrder = 32
+;
+let word33= NationalGalleryArt
+| where ObjectId == 357
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[273], wordOrder = 33
+;
+let word34= NationalGalleryArt
+| where ObjectId == 32589
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[821], wordOrder = 34
+;
+let word35= NationalGalleryArt
+| where ObjectId == 46171
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[687], wordOrder = 35
+;
+let word36= NationalGalleryArt
+| where ObjectId == 62420
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[10], wordOrder = 36
+;
+let word37= NationalGalleryArt
+| where ObjectId == 50509
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[48], wordOrder = 37
+;
+let word38= NationalGalleryArt
+| where ObjectId == 1447
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[128], wordOrder = 38
+;
+let word39= NationalGalleryArt
+| where ObjectId == 176565
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[82], wordOrder = 39
+;
+let word40= NationalGalleryArt
+| where ObjectId == 56721
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[591], wordOrder = 40
+;
+let word41= NationalGalleryArt
+| where ObjectId == 561
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[225], wordOrder = 41
+;
+let word42= NationalGalleryArt
+| where ObjectId == 30744
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[129], wordOrder = 42
+;
+let word43= NationalGalleryArt
+| where ObjectId == 76197
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[32], wordOrder = 43
+;
+let word44= NationalGalleryArt
+| where ObjectId == 1319
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[42], wordOrder = 44
+;
+let word45= NationalGalleryArt
+| where ObjectId == 41599
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[216], wordOrder = 45
+;
+let word46= NationalGalleryArt
+| where ObjectId == 68
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[457], wordOrder = 46
+;
+let word47= NationalGalleryArt
+| where ObjectId == 136016
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[146], wordOrder = 47
+;
+let word48= NationalGalleryArt
+| where ObjectId == 42420
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[126], wordOrder = 48
+;
+let word49= NationalGalleryArt
+| where ObjectId == 46198
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[389], wordOrder = 49
+;
+let word50= NationalGalleryArt
+| where ObjectId == 42429
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[158], wordOrder = 50
+;
+let word51= NationalGalleryArt
+| where ObjectId == 40091
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[108], wordOrder = 51
+;
+let word52= NationalGalleryArt
+| where ObjectId == 41667
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[252], wordOrder = 52
+;
+let word53= NationalGalleryArt
+| where ObjectId == 1515
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[555], wordOrder = 53
+;
+let word54= NationalGalleryArt
+| where ObjectId == 177593
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[223], wordOrder = 54
+;
+let word55= NationalGalleryArt
+| where ObjectId == 176924
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[73], wordOrder = 55
+;
+let word56= NationalGalleryArt
+| where ObjectId == 45889
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[65], wordOrder = 56
+;
+let word57= NationalGalleryArt
+| where ObjectId == 159836
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[96], wordOrder = 57
+;
+let word58= NationalGalleryArt
+| where ObjectId == 35080
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[384], wordOrder = 58
+;
+let word59= NationalGalleryArt
+| where ObjectId == 32578
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[199], wordOrder = 59
+;
+let word60= NationalGalleryArt
+| where ObjectId == 1607
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[167], wordOrder = 60
+;
+let word61= NationalGalleryArt
+| where ObjectId == 124996
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[9], wordOrder = 61
+;
+let word62= NationalGalleryArt
+| where ObjectId == 71
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[56], wordOrder = 62
+;
+let word63= NationalGalleryArt
+| where ObjectId == 1303
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[187], wordOrder = 63
+;
+let word64= NationalGalleryArt
+| where ObjectId == 45640
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[1114], wordOrder = 64
+;
+let word65= NationalGalleryArt
+| where ObjectId == 72328
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[247], wordOrder = 65
+;
+let word66= NationalGalleryArt
+| where ObjectId == 75802
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[11], wordOrder = 66
+;
+let word67= NationalGalleryArt
+| where ObjectId == 1168
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[146], wordOrder = 67
+;
+let word68= NationalGalleryArt
+| where ObjectId == 163380
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[12], wordOrder = 68
+;
+let word69= NationalGalleryArt
+| where ObjectId == 57541
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[116], wordOrder = 69
+;
+let word70= NationalGalleryArt
+| where ObjectId == 206122
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[738], wordOrder = 70
+;
+let word71= NationalGalleryArt
+| where ObjectId == 365
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[267], wordOrder = 71
+;
+let word72= NationalGalleryArt
+| where ObjectId == 46026
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[211], wordOrder = 72
+;
+let word73= NationalGalleryArt
+| where ObjectId == 46127
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[19], wordOrder = 73
+;
+let word74= NationalGalleryArt
+| where ObjectId == 119295
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[425], wordOrder = 74
+;
+let word75= NationalGalleryArt
+| where ObjectId == 45062
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[128], wordOrder = 75
+;
+let word76= NationalGalleryArt
+| where ObjectId == 12198
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[133], wordOrder = 76
+;
+let word77= NationalGalleryArt
+| where ObjectId == 163917
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[238], wordOrder = 77
+;
+let word78= NationalGalleryArt
+| where ObjectId == 45092
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[8], wordOrder = 78
+;
+let word79= NationalGalleryArt
+| where ObjectId == 54183
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[4], wordOrder = 79
+;
+let word80= NationalGalleryArt
+| where ObjectId == 42453
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[82], wordOrder = 80
+;
+let word81= NationalGalleryArt
+| where ObjectId == 561
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[433], wordOrder = 81
+;
+let word82= NationalGalleryArt
+| where ObjectId == 9
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[387], wordOrder = 82
+;
+let word83= NationalGalleryArt
+| where ObjectId == 37004
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[287], wordOrder = 83
+;
+let word84= NationalGalleryArt
+| where ObjectId == 1493
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[118], wordOrder = 84
+;
+let word85= NationalGalleryArt
+| where ObjectId == 41676
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[38], wordOrder = 85
+;
+let word86= NationalGalleryArt
+| where ObjectId == 163917
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[238], wordOrder = 86
+;
+let word87= NationalGalleryArt
+| where ObjectId == 3159
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[118], wordOrder = 87
+;
+let word88= NationalGalleryArt
+| where ObjectId == 63264
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[687], wordOrder = 88
+;
+let word89= NationalGalleryArt
+| where ObjectId == 1
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[905], wordOrder = 89
+;
+let word90= NationalGalleryArt
+| where ObjectId == 1493
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[109], wordOrder = 90
+;
+let word91= NationalGalleryArt
+| where ObjectId == 43723
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[252], wordOrder = 91
+;
+let word92= NationalGalleryArt
+| where ObjectId == 136355
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[1], wordOrder = 92
+;
+let word93= NationalGalleryArt
+| where ObjectId == 1159
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[134], wordOrder = 93
+;
+let word94= NationalGalleryArt
+| where ObjectId == 40062
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[172], wordOrder = 94
+;
+let word95= NationalGalleryArt
+| where ObjectId == 32588
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[604], wordOrder = 95
+;
+let word96= NationalGalleryArt
+| where ObjectId == 158574
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[1], wordOrder = 96
+;
+let word97= NationalGalleryArt
+| where ObjectId == 45411
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[8], wordOrder = 97
+;
+let word98= NationalGalleryArt
+| where ObjectId == 10
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[892], wordOrder = 98
+;
+let word99= NationalGalleryArt
+| where ObjectId == 127587
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[175], wordOrder = 99
+;
+let word100= NationalGalleryArt
+| where ObjectId == 633
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[9], wordOrder = 100
+;
+let word101= NationalGalleryArt
+| where ObjectId == 72328
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[247], wordOrder = 101
+;
+let word102= NationalGalleryArt
+| where ObjectId == 1514
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[615], wordOrder = 102
+;
+let word103= NationalGalleryArt
+| where ObjectId == 42940
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[138], wordOrder = 103
+;
+let word104= NationalGalleryArt
+| where ObjectId == 164958
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[84], wordOrder = 104
+;
+let word105= NationalGalleryArt
+| where ObjectId == 221014
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[479], wordOrder = 105
+;
+let word106= NationalGalleryArt
+| where ObjectId == 151526
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[7], wordOrder = 106
+;
+let word107= NationalGalleryArt
+| where ObjectId == 111124
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[138], wordOrder = 107
+;
+let word108= NationalGalleryArt
+| where ObjectId == 41668
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[206], wordOrder = 108
+;
+let word109= NationalGalleryArt
+| where ObjectId == 34109
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[46], wordOrder = 109
+;
+let word110= NationalGalleryArt
+| where ObjectId == 1514
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[555], wordOrder = 110
+;
+let word111= NationalGalleryArt
+| where ObjectId == 147789
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[2], wordOrder = 111
+;
+let word112= NationalGalleryArt
+| where ObjectId == 3228
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[152], wordOrder = 112
+;
+let word113= NationalGalleryArt
+| where ObjectId == 993
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[323], wordOrder = 113
+;
+let word114= NationalGalleryArt
+| where ObjectId == 166477
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[167], wordOrder = 114
+;
+let word115= NationalGalleryArt
+| where ObjectId == 178042
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[167], wordOrder = 115
+;
+let word116= NationalGalleryArt
+| where ObjectId == 50753
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[91], wordOrder = 116
+;
+let word117= NationalGalleryArt
+| where ObjectId == 207786
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[8], wordOrder = 117
+;
+let word118= NationalGalleryArt
+| where ObjectId == 12
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[372], wordOrder = 118
+;
+let word119= NationalGalleryArt
+| where ObjectId == 1108
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[158], wordOrder = 119
+;
+let word120= NationalGalleryArt
+| where ObjectId == 42423
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[150], wordOrder = 120
+;
+let word121= NationalGalleryArt
+| where ObjectId == 12
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[309], wordOrder = 121
+;
+let word122= NationalGalleryArt
+| where ObjectId == 66154
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[9], wordOrder = 122
+;
+let word123= NationalGalleryArt
+| where ObjectId == 213566
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[11], wordOrder = 123
+;
+let word124= NationalGalleryArt
+| where ObjectId == 44981
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[158], wordOrder = 124
+;
+let word125= NationalGalleryArt
+| where ObjectId == 1197
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[300], wordOrder = 125
+;
+let word126= NationalGalleryArt
+| where ObjectId == 40184
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[149], wordOrder = 126
+;
+let word127= NationalGalleryArt
+| where ObjectId == 92994
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[63], wordOrder = 127
+;
+let word128= NationalGalleryArt
+| where ObjectId == 71071
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[179], wordOrder = 128
+;
+let word129= NationalGalleryArt
+| where ObjectId == 75093
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[7], wordOrder = 129
+;
+let word130= NationalGalleryArt
+| where ObjectId == 211718
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[18], wordOrder = 130
+;
+let word131= NationalGalleryArt
+| where ObjectId == 74211
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[5], wordOrder = 131
+;
+let word132= NationalGalleryArt
+| where ObjectId == 46144
+| project result = extract_all(@'(?m)(\w+)', ProvenanceText)[399], wordOrder = 132
+;
+word1 | union word2,word3,word4,word5,word6,word7,word8,word9,word10,word11,word12,word13,word14,word15,word16,word17,word18,word19,word20,word21,word22,word23,word24,word25,word26,word27,word28,word29,word30,word31,word32,word33,word34,word35,word36,word37,word38,word39,word40,word41,word42,word43,word44,word45,word46,word47,word48,word49,word50,word51,word52,word53,word54,word55,word56,word57,word58,word59,word60,word61,word62,word63,word64,word65,word66,word67,word68,word69,word70,word71,word72,word73,word74,word75,word76,word77,word78,word79,word80,word81,word82,word83,word84,word85,word86,word87,word88,word89,word90,word91,word92,word93,word94,word95,word96,word97,word98,word99,word100,word101,word102,word103,word104,word105,word106,word107,word108,word109,word110,word111,word112,word113,word114,word115,word116,word117,word118,word119,word120,word121,word122,word123,word124,word125,word126,word127,word128,word129,word130,word131,word132
+
+
+
+////////////// Translated message /////////////////////////
+in catalogue of titles grand,
+three hidden words demand your hand.
+when found all, they form a line:
+a clear timeline, simply fine.
+
+words rules are simple to review:
+at least three letters have in view,
+all punctuations mark the end,
+they're case insensitive, my friend.
+
+to find all words, you'll need some skill,
+seeking the popular will guide you still.
+below the king, the first word mounts,
+the second shares with third their counts.
+
+reveal the last word with wise thought:
+take first two letters from word most sought
+into marked dozen, and change just one,
+and with those two - the word is done.
+
+so search the titles, high and low,
+and when you find it, you'll know.
+you've picked the image that revealed
+the pass-code to the world concealed.
+
+
+NationalGalleryArt
+// Rule 1. There are three secret words in the Title field
+// Rule 2. The words are case insensitive
+| extend TitleUnified = toupper(Title)
+| extend TitleWords = extract_all(@'(\w+)', TitleUnified)
+| mv-expand TitleWords to typeof(string)
+// Rule 4. The words contain at least 3 characters
+| where strlen(TitleWords) >= 3
+// Rule 5.1. Sort words by occurrences number descending
+| summarize WordCount=count() by TitleWords
+| sort by WordCount desc 
+
+
+The next word after KING by commonality is DAY, we got the first one!
+The second word is YEAR sharing count with word THIRD.
+The third word is the combination of the first two letters (TH) of the most common word (THE) and the twelve word (MAN), this creates MONTH
+
+// ImageUrl
+// https://api.nga.gov/iiif/64c9eb07-5e01-40fe-8fd0-886cfb4a70c7/full/!900,900/0/default.jpg << Suspicious
+NationalGalleryArt
+| where Title has_all ("DAY", "MONTH", "YEAR")
+| project ImageUrl

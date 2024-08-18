@@ -43,7 +43,8 @@ def flatten_playlist(data: Dict) -> pd.DataFrame:
     flat_col = df["track_artists"].explode().to_frame()
     # Indexes are duplicated upon explode, i.e. still in sync with original DF
     df = df.drop(columns=["track_artists"]).join(flat_col)
-
+    df = df[~df["track_album_name"].isnull()]
+    
     # Flatten the artist objects
     flat_col = pd.json_normalize(df["track_artists"], sep = "_").add_prefix("artist_")
     # Reuse the index of the original DF
